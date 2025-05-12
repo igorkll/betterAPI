@@ -2,25 +2,25 @@
     {
         "name": "test 1",
         "format": "lua",
-        "url": "",
+        "url": "https://raw.githubusercontent.com/igorkll/betterAPI/refs/heads/main/extensions/test_1.lua",
         "version: ": 1
     },
     {
         "name": "test 2",
         "format": "lua",
-        "url": "",
+        "url": "https://raw.githubusercontent.com/igorkll/betterAPI/refs/heads/main/extensions/test_2.lua",
         "version: ": 1
     },
     {
         "name": "test 3",
         "format": "lua",
-        "url": "",
+        "url": "https://raw.githubusercontent.com/igorkll/betterAPI/refs/heads/main/extensions/test_3.lua",
         "version: ": 1
     },
     {
         "name": "test 4",
         "format": "lua",
-        "url": "",
+        "url": "https://raw.githubusercontent.com/igorkll/betterAPI/refs/heads/main/extensions/test_4.lua",
         "version: ": 1
     }
 ]
