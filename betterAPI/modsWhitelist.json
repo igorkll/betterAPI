@@ -1,0 +1,55 @@
+[
+   {
+      "fileId" : 2949350596,
+      "localId" : "3aeb81c2-71b9-45a1-9479-1f48f1e8ff21",
+      "name" : "SComputers [Fork]"
+   },
+   {
+      "fileId" : 2948210047,
+      "localId" : "9fd09c44-c46a-45b9-a7b9-da6f115989c0",
+      "name" : "sound mod",
+      "apis" : ["dlm"]
+   },
+   {
+      "fileId" : 3185287679,
+      "localId" : "a99716ca-719d-4891-b1d2-f1978e954a05",
+      "name" : "online boombox [betterAPI]",
+      "apis" : ["audio", "http"]
+   },
+   {
+      "fileId" : 2888172201,
+      "localId" : "536faf87-fec5-48c9-848b-9970412764d9",
+      "name" : "DLM Code Examples",
+      "apis" : ["dlm"]
+   },
+   {
+      "fileId" : 3158829147,
+      "localId" : "cdc5cca9-9173-476b-bf76-4d0497ec7dec",
+      "name" : "dynamic code executor",
+      "apis" : ["dlm"]
+   },
+   {
+      "fileId" : 3225242710,
+      "localId" : "27776f90-6938-4201-986a-ada58e989ac1",
+      "name" : "Musical Holographic Statues [Better API]",
+      "apis" : ["audio"]
+   },
+   {
+      "fileId" : 3353025650,
+      "localId" : "dae960eb-fe5c-4181-9d42-e815982911a1",
+      "name" : "NES Emulator",
+      "apis" : ["thread", "keyboard", "canvas", "filesystem", "audio", "fast"]
+   },
+   {
+      "fileId" : 3100500975,
+      "localId" : "5e308f63-63d3-46b6-adf2-f8ebfc976f4d",
+      "name" : "MT Fast Logic",
+      "apis" : ["thread"]
+   },
+   {
+      "fileId" : 3422770337,
+      "localId" : "ad7905bb-c912-4dbc-8556-5ac7debc0da5",
+      "name" : "capture mod [SComputers addon]",
+      "apis" : ["videoCapture"]
+   }   
+]
