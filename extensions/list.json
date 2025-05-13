@@ -24,7 +24,7 @@
         "name": "test 4",
         "format": "lua",
         "url": "https://raw.githubusercontent.com/igorkll/betterAPI/refs/heads/main/extensions/test_4.lua",
-        "version": "4",
+        "version": "5",
         "author": "test"
     }
 ]
