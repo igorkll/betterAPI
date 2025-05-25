@@ -1,30 +1,9 @@
 [
     {
-        "name": "test 1",
-        "format": "lua",
-        "url": "https://raw.githubusercontent.com/igorkll/betterAPI/refs/heads/main/extensions/test_1.lua",
-        "version": "3",
-        "author": "test"
-    },
-    {
-        "name": "test 2",
-        "format": "lua",
-        "url": "https://raw.githubusercontent.com/igorkll/betterAPI/refs/heads/main/extensions/test_2.lua",
-        "version": "2",
-        "author": "test"
-    },
-    {
-        "name": "test 3",
-        "format": "lua",
-        "url": "https://raw.githubusercontent.com/igorkll/betterAPI/refs/heads/main/extensions/test_3.lua",
-        "version": "3",
-        "author": "test"
-    },
-    {
-        "name": "test 4",
-        "format": "lua",
-        "url": "https://raw.githubusercontent.com/igorkll/betterAPI/refs/heads/main/extensions/test_4.lua",
-        "version": "5",
-        "author": "test"
+        "name": "BetterPaintTool",
+        "format": "dll",
+        "url": "https://github.com/QuestionableM/SM-BetterPaintTool/releases/download/v1.7.1/SM-BetterPaintTool.dll",
+        "version": "1.7.1",
+        "author": "QuestionableM"
     }
 ]
