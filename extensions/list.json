@@ -5,5 +5,12 @@
         "url": "https://github.com/QuestionableM/SM-BetterPaintTool/releases/download/v1.7.1/SM-BetterPaintTool.dll",
         "version": "1.7.1",
         "author": "QuestionableM"
+    },
+    {
+        "name": "Display player ID",
+        "format": "lua",
+        "url": "https://raw.githubusercontent.com/igorkll/betterAPI/refs/heads/main/extensions/Display_player_ID.lua",
+        "version": "3",
+        "author": "AlexTool"
     }
 ]
