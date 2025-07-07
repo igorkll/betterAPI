@@ -1,0 +1,43 @@
+local ffi = require("ffi")
+local BetterRender = ffi.load("libBetterRender")
+
+ffi.cdef[[
+typedef struct BetterRender BetterRender;
+
+BetterRender* create(int width, int height);
+void destroy(BetterRender* betterRender);
+void begin_draw(BetterRender* betterRender);
+void draw_pixel(BetterRender* betterRender, int posX, int posY, uint32_t color);
+void end_draw(BetterRender* betterRender);
+void begin_read(BetterRender* betterRender);
+uint32_t read_pixel(BetterRender* betterRender, int width, int height);
+void end_read(BetterRender* betterRender);
+]]
+
+-- Example usage
+local width, height = 800, 600
+local render = BetterRender.create(width, height)
+
+-- Begin drawing
+BetterRender.begin_draw(render)
+
+-- Draw a pixel (example: red color)
+local redColor = 0xFF0000FF -- ARGB format
+BetterRender.draw_pixel(render, 100, 100, redColor)
+
+-- End drawing
+BetterRender.end_draw(render)
+
+-- Begin reading
+BetterRender.begin_read(render)
+
+-- Read a pixel color
+local pixelColor = BetterRender.read_pixel(render, 100, 100)
+
+print("------------ TEST ------------", pixelColor)
+
+-- End reading
+BetterRender.end_read(render)
+
+-- Clean up
+BetterRender.destroy(render)
