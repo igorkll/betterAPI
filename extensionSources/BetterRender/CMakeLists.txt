@@ -16,7 +16,7 @@ include_directories(Library/rlights)
 file(GLOB_RECURSE SOURCES Source/*.c Source/*.cpp)
 
 # Set output path for the DLL
-set(BIN_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/Output)
+set(BIN_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/BetterRender)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${BIN_OUTPUT_PATH})
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${BIN_OUTPUT_PATH})
 
