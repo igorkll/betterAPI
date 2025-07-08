@@ -19,29 +19,16 @@ uint32_t read_pixel(BetterRender* betterRender, int width, int height);
 void end_read(BetterRender* betterRender);
 ]]
 
--- Example usage
-local width, height = 800, 600
-local render = BetterRender.create(width, height)
+better.render = {
+    create = BetterRender.create,
+    destroy = BetterRender.destroy,
 
--- Begin drawing
-BetterRender.begin_draw(render)
+    begin_draw = BetterRender.begin_draw,
+    draw_clear = BetterRender.draw_clear,
+    draw_pixel = BetterRender.draw_pixel,
+    end_draw = BetterRender.end_draw,
 
-BetterRender.draw_clear(render, 0x0000ff)
-BetterRender.draw_pixel(render, 100, 100, 0xFF0000)
-
--- End drawing
-BetterRender.end_draw(render)
-
--- Begin reading
-BetterRender.begin_read(render)
-
--- Read a pixel color
-local pixelColor = BetterRender.read_pixel(render, 100, 100)
-
-print("------------ TEST ------------", pixelColor)
-
--- End reading
---BetterRender.end_read(render)
-
--- Clean up
---BetterRender.destroy(render)
+    begin_read = BetterRender.begin_read,
+    read_pixel = BetterRender.read_pixel,
+    end_read = BetterRender.end_read
+}
