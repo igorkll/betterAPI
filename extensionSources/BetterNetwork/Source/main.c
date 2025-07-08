@@ -26,6 +26,10 @@ typedef struct {
     HINTERNET hConnect;
 } Connection;
 
+typedef struct {
+    HINTERNET hRequest;
+} Request;
+
 // -----------------------------------
 
 static wchar_t* convertString(const char* serverName) {
@@ -73,6 +77,7 @@ static int _newConnection(lua_State* L) {
 
     if (!connection->hConnect) {
         lua_pushinteger(L, GetLastError());
+        free(connection);
         return 1;
     }
 
@@ -87,6 +92,37 @@ static int _closeConnection(lua_State* L) {
     return 0;
 }
 
+static int _newRequest(lua_State* L) {
+    Connection* connection = (Connection*)lua_touserdata(L, 1);
+    const char* requestType = luaL_checkstring(L, 2);
+    const char* requestPath = luaL_checkstring(L, 3);
+
+
+    Request* request = malloc(sizeof(Request));
+    
+    wchar_t* wRequestType = convertString(requestType);
+    wchar_t* wRequestPath = convertString(requestType);
+    request->hRequest = WinHttpOpenRequest(connection->hConnect, wRequestType, wRequestPath, NULL, WINHTTP_NO_REFERER, WINHTTP_DEFAULT_ACCEPT_TYPES, 0);
+    free(wRequestType);
+    free(wRequestPath);
+
+    if (!request->hRequest) {
+        lua_pushinteger(L, GetLastError());
+        free(request);
+        return 1;
+    }
+
+    lua_pushlightuserdata(L, (void*)request);
+    return 1;
+}
+
+static int _closeRequest(lua_State* L) {
+    Request* request = (Request*)lua_touserdata(L, 1);
+    WinHttpCloseHandle(request->hRequest);
+    free(request);
+    return 1;
+}
+
 // -----------------------------------
 
 static const struct luaL_Reg g_functions[] = {
@@ -95,6 +131,9 @@ static const struct luaL_Reg g_functions[] = {
 
     {"newConnection", _newConnection},
     {"closeConnection", _closeConnection},
+
+    {"newRequest", _newRequest},
+    {"closeRequest", _closeRequest},
 
     {NULL, NULL}
 };
