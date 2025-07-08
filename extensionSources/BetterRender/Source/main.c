@@ -14,6 +14,7 @@
 #include <math.h>
 #include <sys/stat.h>
 #include <rlights.h>
+#include <GL/gl.h>
 #include <luajit/lua.h>
 #include <luajit/lauxlib.h>
 #include <luajit/lualib.h>
@@ -26,7 +27,7 @@
 
 typedef struct {
     RenderTexture2D renderTarget;
-    Image image;
+    uint8_t* image;
 } BetterRender;
 
 // -----------------------------------
@@ -48,6 +49,25 @@ static uint32_t packColor(Color color) {
 
 static Color unpackColor(uint32_t color) {
     return GetColor((color * 256) + 255);
+}
+
+static void getTextureData(GLuint textureID, int width, int height, uint8_t* outputData) {
+    glBindTexture(GL_TEXTURE_2D, textureID);
+    
+    GLenum error = glGetError();
+    if (error != GL_NO_ERROR) {
+        fprintf(stderr, "Error before glGetTexImage: %d\n", error);
+        return;
+    }
+
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, outputData);
+
+    error = glGetError();
+    if (error != GL_NO_ERROR) {
+        fprintf(stderr, "Error after glGetTexImage: %d\n", error);
+    }
+
+    glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 // -----------------------------------
@@ -109,7 +129,8 @@ static int end_draw(lua_State* L) {
 
 static int begin_read(lua_State* L) {
     BetterRender* betterRender = (BetterRender*)lua_touserdata(L, 1);
-    betterRender->image = LoadImageFromTexture(betterRender->renderTarget.texture);
+    betterRender->image = malloc(betterRender->renderTarget.texture.width * betterRender->renderTarget.texture.height * 4);
+    getTextureData(betterRender->renderTarget.texture.id, betterRender->renderTarget.texture.width, betterRender->renderTarget.texture.height, betterRender->image);
     return 0;
 }
 
@@ -117,14 +138,14 @@ static int read_pixel(lua_State* L) {
     BetterRender* betterRender = (BetterRender*)lua_touserdata(L, 1);
     int x = luaL_checkinteger(L, 2);
     int y = luaL_checkinteger(L, 3);
-    Color color = GetImageColor(betterRender->image, x, y);
-    lua_pushinteger(L, packColor(color));
+    ptrdiff_t colorIndex = (x + (y * betterRender->renderTarget.texture.width)) * 4;
+    lua_pushinteger(L, (betterRender->image[colorIndex] * 256 * 256) + (betterRender->image[colorIndex+1] * 256) + betterRender->image[colorIndex+2]);
     return 1;
 }
 
 static int end_read(lua_State* L) {
     BetterRender* betterRender = (BetterRender*)lua_touserdata(L, 1);
-    UnloadImage(betterRender->image);
+    free(betterRender->image);
     return 0;
 }
 
