@@ -8,13 +8,10 @@ bext.registerHandler_exit(function ()
 end)
 
 local function networkObject(object, objectType)
-    return setmetatable({objectType = objectType}, {__index = function(_, key)
-        if better.network[key] then
-            return function (_, ...)
-                return better.network[key](object, ...)
-            end
-        end
-    end})
+    if type(object) == "number" then
+        return nil, "error: " .. object
+    end
+    return setmetatable({objectType = objectType, object = object}, {__index = better.network})
 end
 
 local function checkObjectType(object, objectType)
@@ -28,25 +25,26 @@ better.network = {
         return networkObject(BetterNetwork.newConnection(url, port or 80), "connection")
     end,
     closeConnection = function(connection)
-        BetterNetwork.closeConnection(connection)
+        BetterNetwork.closeConnection(connection.object)
     end,
 
-    newRequest = function(connection, headers)
+    newRequest = function(connection, requestType, requestPath)
         checkObjectType(connection, "connection")
-        bext.checkArg(2, headers, "number", "nil")
-        return networkObject(BetterNetwork.newRequest(connection, headers), "request")
+        bext.checkArg(2, requestType, "string")
+        bext.checkArg(3, requestPath, "string", "nil")
+        return networkObject(BetterNetwork.newRequest(connection.object, requestType, requestPath or ""), "request")
     end,
     sendRequest = function(request, headers)
         checkObjectType(request, "request")
         bext.checkArg(2, headers, "string", "nil")
-        return networkObject(BetterNetwork.sendRequest(request, headers or ""))
+        return BetterNetwork.sendRequest(request.object, headers or "")
     end,
     getResult = function(request, headers)
         checkObjectType(request, "request")
-        return networkObject(BetterNetwork.getResult(request))
+        return BetterNetwork.getResult(request.object)
     end,
     closeRequest = function(request)
         checkObjectType(request, "request")
-        return networkObject(BetterNetwork.closeRequest(request))
+        return BetterNetwork.closeRequest(request.object)
     end
 }

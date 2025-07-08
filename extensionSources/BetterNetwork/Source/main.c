@@ -102,7 +102,7 @@ static int _newRequest(lua_State* L) {
     Request* request = malloc(sizeof(Request));
     
     wchar_t* wRequestType = convertString(requestType);
-    wchar_t* wRequestPath = convertString(requestType);
+    wchar_t* wRequestPath = convertString(requestPath);
     request->hRequest = WinHttpOpenRequest(connection->hConnect, wRequestType, wRequestPath, NULL, WINHTTP_NO_REFERER, WINHTTP_DEFAULT_ACCEPT_TYPES, 0);
     free(wRequestType);
     free(wRequestPath);
@@ -122,7 +122,7 @@ static int _sendRequest(lua_State* L) {
     const char* headers = luaL_checkstring(L, 2);
     if (strlen(headers) > 0) {
         wchar_t* wHeaders = convertString(headers);
-        WinHttpAddRequestHeaders(request->hRequest, headers, (ULONG)-1, WINHTTP_ADDREQ_FLAG_ADD | WINHTTP_ADDREQ_FLAG_REPLACE);
+        WinHttpAddRequestHeaders(request->hRequest, wHeaders, (ULONG)-1, WINHTTP_ADDREQ_FLAG_ADD | WINHTTP_ADDREQ_FLAG_REPLACE);
         free(wHeaders);
     }
     lua_pushboolean(L, WinHttpSendRequest(request->hRequest, WINHTTP_NO_ADDITIONAL_HEADERS, 0, WINHTTP_NO_REQUEST_DATA, 0, 0, 0));
