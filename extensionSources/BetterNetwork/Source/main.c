@@ -92,6 +92,7 @@ static int _closeConnection(lua_State* L) {
     return 0;
 }
 
+
 static int _newRequest(lua_State* L) {
     Connection* connection = (Connection*)lua_touserdata(L, 1);
     const char* requestType = luaL_checkstring(L, 2);
@@ -116,11 +117,24 @@ static int _newRequest(lua_State* L) {
     return 1;
 }
 
+static int _sendRequest(lua_State* L) {
+    Request* request = (Request*)lua_touserdata(L, 1);
+    const char* headers = luaL_checkstring(L, 2);
+    if (strlen(headers) > 0) {
+        wchar_t* wHeaders = convertString(headers);
+        WinHttpAddRequestHeaders(request->hRequest, headers, (ULONG)-1, WINHTTP_ADDREQ_FLAG_ADD | WINHTTP_ADDREQ_FLAG_REPLACE);
+        free(wHeaders);
+    }
+    lua_pushboolean(L, WinHttpSendRequest(request->hRequest, WINHTTP_NO_ADDITIONAL_HEADERS, 0, WINHTTP_NO_REQUEST_DATA, 0, 0, 0));
+    free(request);
+    return 1;
+}
+
 static int _closeRequest(lua_State* L) {
     Request* request = (Request*)lua_touserdata(L, 1);
     WinHttpCloseHandle(request->hRequest);
     free(request);
-    return 1;
+    return 0;
 }
 
 // -----------------------------------
@@ -133,6 +147,7 @@ static const struct luaL_Reg g_functions[] = {
     {"closeConnection", _closeConnection},
 
     {"newRequest", _newRequest},
+    {"sendRequest", _sendRequest},
     {"closeRequest", _closeRequest},
 
     {NULL, NULL}

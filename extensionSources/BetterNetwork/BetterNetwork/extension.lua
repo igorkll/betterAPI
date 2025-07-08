@@ -6,3 +6,7 @@ BetterNetwork.init()
 bext.registerHandler_exit(function ()
     BetterNetwork.deinit()
 end)
+
+better.network = {
+
+}
