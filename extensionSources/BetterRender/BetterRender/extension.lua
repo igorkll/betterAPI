@@ -17,6 +17,8 @@ void end_draw(BetterRender* betterRender);
 void begin_read(BetterRender* betterRender);
 uint32_t read_pixel(BetterRender* betterRender, int width, int height);
 void end_read(BetterRender* betterRender);
+
+int test(int test);
 ]]
 
 better.render = {
@@ -30,5 +32,7 @@ better.render = {
 
     begin_read = BetterRender.begin_read,
     read_pixel = BetterRender.read_pixel,
-    end_read = BetterRender.end_read
+    end_read = BetterRender.end_read,
+
+    test = BetterRender.test
 }

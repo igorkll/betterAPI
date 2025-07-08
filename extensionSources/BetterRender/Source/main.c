@@ -95,3 +95,7 @@ EXPORT uint32_t read_pixel(BetterRender* betterRender, int x, int y) {
 EXPORT void end_read(BetterRender* betterRender) {
     UnloadImage(betterRender->image);
 }
+
+EXPORT int test(int test) {
+    return test * 2;
+}
