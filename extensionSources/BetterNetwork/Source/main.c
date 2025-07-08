@@ -24,10 +24,13 @@ static HINTERNET hSession;
 
 typedef struct {
     HINTERNET hConnect;
+    wchar_t* wUrl;
 } Connection;
 
 typedef struct {
     HINTERNET hRequest;
+    wchar_t* wRequestType;
+    wchar_t* wRequestPath;
 } Request;
 
 // -----------------------------------
@@ -71,9 +74,8 @@ static int _newConnection(lua_State* L) {
 
     Connection* connection = malloc(sizeof(Connection));
     
-    wchar_t* wUrl = convertString(url);
-    connection->hConnect = WinHttpConnect(hSession, wUrl, port, 0);
-    free(wUrl);
+    connection->wUrl = convertString(url);
+    connection->hConnect = WinHttpConnect(hSession, connection->wUrl, port, 0);
 
     if (!connection->hConnect) {
         lua_pushinteger(L, GetLastError());
@@ -88,6 +90,7 @@ static int _newConnection(lua_State* L) {
 static int _closeConnection(lua_State* L) {
     Connection* connection = (Connection*)lua_touserdata(L, 1);
     WinHttpCloseHandle(connection->hConnect);
+    free(connection->wUrl);
     free(connection);
     return 0;
 }
@@ -101,11 +104,9 @@ static int _newRequest(lua_State* L) {
 
     Request* request = malloc(sizeof(Request));
     
-    wchar_t* wRequestType = convertString(requestType);
-    wchar_t* wRequestPath = convertString(requestPath);
-    request->hRequest = WinHttpOpenRequest(connection->hConnect, wRequestType, wRequestPath, NULL, WINHTTP_NO_REFERER, WINHTTP_DEFAULT_ACCEPT_TYPES, 0);
-    free(wRequestType);
-    free(wRequestPath);
+    request->wRequestType = convertString(requestType);
+    request->wRequestPath = convertString(requestPath);
+    request->hRequest = WinHttpOpenRequest(connection->hConnect, request->wRequestType, request->wRequestPath, NULL, WINHTTP_NO_REFERER, WINHTTP_DEFAULT_ACCEPT_TYPES, 0);
 
     if (!request->hRequest) {
         lua_pushinteger(L, GetLastError());
@@ -133,7 +134,10 @@ static int _sendRequest(lua_State* L) {
 static int _getResult(lua_State* L) {
     Request* request = (Request*)lua_touserdata(L, 1);
     
-    WinHttpReceiveResponse(request->hRequest, NULL);
+    if (!WinHttpReceiveResponse(request->hRequest, NULL)) {
+        lua_pushinteger(L, GetLastError());
+        return 1;
+    }
 
     DWORD dwSize = 0;
     DWORD dwDownloaded = 0;
@@ -159,6 +163,8 @@ static int _getResult(lua_State* L) {
 static int _closeRequest(lua_State* L) {
     Request* request = (Request*)lua_touserdata(L, 1);
     WinHttpCloseHandle(request->hRequest);
+    free(request->wRequestType);
+    free(request->wRequestPath);
     free(request);
     return 0;
 }

@@ -14,7 +14,15 @@ local function networkObject(object, objectType)
     return setmetatable({objectType = objectType, object = object}, {__index = better.network})
 end
 
-local function checkObjectType(object, objectType)
+local function formatResult(ret)
+    if type(ret) == "number" then
+        return nil, "error: " .. ret
+    end
+    return ret
+end
+
+local function checkObject(object, objectType)
+    if object.destroyed then error("object destroyed", 3) end
     if object.objectType ~= objectType then error("object is not \"" .. objectType .. "\"", 3) end
 end
 
@@ -25,26 +33,29 @@ better.network = {
         return networkObject(BetterNetwork.newConnection(url, port or 80), "connection")
     end,
     closeConnection = function(connection)
+        checkObject(connection, "connection")
         BetterNetwork.closeConnection(connection.object)
+        connection.destroyed = true
     end,
 
     newRequest = function(connection, requestType, requestPath)
-        checkObjectType(connection, "connection")
+        checkObject(connection, "connection")
         bext.checkArg(2, requestType, "string")
         bext.checkArg(3, requestPath, "string", "nil")
-        return networkObject(BetterNetwork.newRequest(connection.object, requestType, requestPath or ""), "request")
+        return networkObject(BetterNetwork.newRequest(connection.object, requestType, requestPath or "/"), "request")
     end,
     sendRequest = function(request, headers)
-        checkObjectType(request, "request")
+        checkObject(request, "request")
         bext.checkArg(2, headers, "string", "nil")
         return BetterNetwork.sendRequest(request.object, headers or "")
     end,
     getResult = function(request, headers)
-        checkObjectType(request, "request")
-        return BetterNetwork.getResult(request.object)
+        checkObject(request, "request")
+        return formatResult(BetterNetwork.getResult(request.object))
     end,
     closeRequest = function(request)
-        checkObjectType(request, "request")
-        return BetterNetwork.closeRequest(request.object)
+        checkObject(request, "request")
+        BetterNetwork.closeRequest(request.object)
+        request.destroyed = true
     end
 }
