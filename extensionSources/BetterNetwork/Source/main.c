@@ -35,21 +35,21 @@ typedef struct {
 
 // -----------------------------------
 
-static wchar_t* convertString(const char* serverName) {
-    int wchars_num = MultiByteToWideChar(CP_UTF8, 0, serverName, -1, NULL, 0);
+static wchar_t* convertString(const char* string_utf8) {
+    int wchars_num = MultiByteToWideChar(CP_UTF8, 0, string_utf8, -1, NULL, 0);
     if (wchars_num <= 0) {
         return NULL;
     }
 
     size_t len = wchars_num * sizeof(wchar_t);
-    wchar_t* wideServerName = (wchar_t*)malloc(len + 1);
-    if (!wideServerName) {
+    wchar_t* string_wide = (wchar_t*)malloc(len + 1);
+    if (!string_wide) {
         return NULL;
     }
 
-    MultiByteToWideChar(CP_UTF8, 0, serverName, -1, wideServerName, wchars_num);
-    wideServerName[len] = '\0';
-    return wideServerName;
+    MultiByteToWideChar(CP_UTF8, 0, string_utf8, -1, string_wide, wchars_num);
+    string_wide[len] = '\0';
+    return string_wide;
 }
 
 // -----------------------------------
