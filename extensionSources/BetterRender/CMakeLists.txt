@@ -22,6 +22,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${BIN_OUTPUT_PATH})
 # Create a DLL instead of an executable
 add_library(BetterRender SHARED ${SOURCES})
 
+
 # raylib configuration
 set(RAYLIB_VERSION 5.5)
 FetchContent_Declare(
@@ -35,7 +36,11 @@ FetchContent_MakeAvailable(raylib)
 # Link raylib to the BetterRender library
 target_compile_definitions(raylib PRIVATE EXTERNAL_CONFIG_FLAGS)
 target_precompile_headers(raylib PRIVATE Source/raylib_config.h)
-target_link_libraries(BetterRender raylib)
+target_link_libraries(BetterRender PRIVATE raylib)
+
+# Link luajit to the BetterRender library
+include_directories(${CMAKE_SOURCE_DIR}/../libs)
+target_link_libraries(BetterRender PRIVATE ${CMAKE_SOURCE_DIR}/../libs/luajit/lua51.lib)
 
 # Ensure that you export functions from the DLL
 target_compile_definitions(BetterRender PRIVATE BetterRender_EXPORTS)
