@@ -26,6 +26,29 @@ local function checkObject(object, objectType)
     if object.objectType ~= objectType then error("object is not \"" .. objectType .. "\"", 3) end
 end
 
+local function urlEncode(str)
+    if str then
+        return str:gsub("([^%w])", function(c)
+            return string.format("%%%02X", string.byte(c))
+        end)
+    else
+        return ""
+    end
+end
+
+local function tableToQueryString(params)
+    local queryString = {}
+    
+    for key, value in pairs(params) do
+        local encodedKey = urlEncode(tostring(key))
+        local encodedValue = urlEncode(tostring(value))
+        
+        table.insert(queryString, encodedKey .. "=" .. encodedValue)
+    end
+    
+    return table.concat(queryString, "&")
+end
+
 better.network = {
     newConnection = function(url, port)
         bext.checkArg(1, url, "string")
@@ -44,10 +67,14 @@ better.network = {
         bext.checkArg(3, requestPath, "string", "nil")
         return networkObject(BetterNetwork.newRequest(connection.object, requestType, requestPath or "/"), "request")
     end,
-    sendRequest = function(request, headers)
+    sendRequest = function(request, headers, args)
         checkObject(request, "request")
         bext.checkArg(2, headers, "string", "nil")
-        return BetterNetwork.sendRequest(request.object, headers or "")
+        bext.checkArg(3, args, "string", "table", "nil")
+        if type(args) == "table" then
+            args = tableToQueryString(args)
+        end
+        return BetterNetwork.sendRequest(request.object, headers or "", args or "")
     end,
     getResult = function(request, headers)
         checkObject(request, "request")

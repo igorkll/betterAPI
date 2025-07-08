@@ -124,12 +124,19 @@ static int _newRequest(lua_State* L) {
 static int _sendRequest(lua_State* L) {
     Request* request = (Request*)lua_touserdata(L, 1);
     const char* headers = luaL_checkstring(L, 2);
+    size_t argsLen = 0;
+    const char* args = luaL_checklstring(L, 3, &argsLen);
+    if (argsLen == 0) {
+        args = 0;
+    }
+
     if (strlen(headers) > 0) {
         wchar_t* wHeaders = convertString(headers);
         WinHttpAddRequestHeaders(request->hRequest, wHeaders, (ULONG)-1, WINHTTP_ADDREQ_FLAG_ADD | WINHTTP_ADDREQ_FLAG_REPLACE);
         free(wHeaders);
     }
-    lua_pushboolean(L, WinHttpSendRequest(request->hRequest, WINHTTP_NO_ADDITIONAL_HEADERS, 0, WINHTTP_NO_REQUEST_DATA, 0, 0, 0));
+    
+    lua_pushboolean(L, WinHttpSendRequest(request->hRequest, WINHTTP_NO_ADDITIONAL_HEADERS, 0, args, argsLen, argsLen, 0));
     return 1;
 }
 
