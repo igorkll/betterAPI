@@ -23,13 +23,11 @@
 static HINTERNET hSession;
 
 typedef struct {
-    bool valid;
     HINTERNET hConnect;
     wchar_t* wUrl;
 } Connection;
 
 typedef struct {
-    bool valid;
     HINTERNET hRequest;
     wchar_t* wRequestType;
     wchar_t* wRequestPath;
@@ -81,20 +79,18 @@ static int _newConnection(lua_State* L) {
 
     if (!connection->hConnect) {
         lua_pushinteger(L, GetLastError());
+        free(connection->wUrl);
         free(connection);
         return 1;
     }
 
-    connection->valid = true;
     lua_pushlightuserdata(L, (void*)connection);
     return 1;
 }
 
 static int _closeConnection(lua_State* L) {
     Connection* connection = (Connection*)lua_touserdata(L, 1);
-    if (connection->valid) {
-        WinHttpCloseHandle(connection->hConnect);
-    }
+    WinHttpCloseHandle(connection->hConnect);
     free(connection->wUrl);
     free(connection);
     return 0;
@@ -115,11 +111,12 @@ static int _newRequest(lua_State* L) {
 
     if (!request->hRequest) {
         lua_pushinteger(L, GetLastError());
+        free(request->wRequestType);
+        free(request->wRequestPath);
         free(request);
         return 1;
     }
 
-    request->valid = true;
     lua_pushlightuserdata(L, (void*)request);
     return 1;
 }
@@ -133,7 +130,6 @@ static int _sendRequest(lua_State* L) {
         free(wHeaders);
     }
     lua_pushboolean(L, WinHttpSendRequest(request->hRequest, WINHTTP_NO_ADDITIONAL_HEADERS, 0, WINHTTP_NO_REQUEST_DATA, 0, 0, 0));
-    free(request);
     return 1;
 }
 
@@ -168,9 +164,7 @@ static int _getResult(lua_State* L) {
 
 static int _closeRequest(lua_State* L) {
     Request* request = (Request*)lua_touserdata(L, 1);
-    if (request->valid) {
-        WinHttpCloseHandle(request->hRequest);
-    }
+    WinHttpCloseHandle(request->hRequest);
     free(request->wRequestType);
     free(request->wRequestPath);
     free(request);
