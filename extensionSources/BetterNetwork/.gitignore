@@ -1,0 +1,4 @@
+build
+*.dll
+*.pdb
+.vscode/settings.json
