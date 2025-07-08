@@ -5,7 +5,6 @@ project(BetterRender)
 
 set(CMAKE_C_STANDARD 23)
 set(CMAKE_CXX_STANDARD 23)
-set(BUILD_SHARED_LIBS OFF)
 include(FetchContent)
 
 # Include directories for source files

@@ -28,8 +28,15 @@ typedef struct {
 
 // -----------------------------------
 
+static bool inited = false;
+
 static void init() {
-    SetTargetFPS(0);
+    if (!inited) {
+        InitWindow(100, 100, "empty window");
+        SetWindowState(FLAG_WINDOW_HIDDEN);
+        SetTargetFPS(0);
+        inited = true;
+    }
 }
 
 static uint32_t packColor(Color color) {
@@ -37,12 +44,14 @@ static uint32_t packColor(Color color) {
 }
 
 static Color unpackColor(uint32_t color) {
-    return GetColor(color);
+    return GetColor((color * 256) + 255);
 }
 
 // -----------------------------------
 
 EXPORT BetterRender* create(int width, int height) {
+    init();
+
     BetterRender* betterRender = malloc(sizeof(BetterRender));
     betterRender->renderTarget = LoadRenderTexture(width, height);
 
@@ -60,8 +69,12 @@ EXPORT void begin_draw(BetterRender* betterRender) {
     BeginTextureMode(betterRender->renderTarget);
 }
 
-EXPORT void draw_pixel(BetterRender* betterRender, int posX, int posY, uint32_t color) {
-    DrawPixel(posX, posY, unpackColor(color));
+EXPORT void draw_clear(BetterRender* betterRender, uint32_t color) {
+    ClearBackground(unpackColor(color));
+}
+
+EXPORT void draw_pixel(BetterRender* betterRender, int x, int y, uint32_t color) {
+    DrawPixel(x, y, unpackColor(color));
 }
 
 EXPORT void end_draw(BetterRender* betterRender) {
@@ -74,8 +87,8 @@ EXPORT void begin_read(BetterRender* betterRender) {
     betterRender->image = LoadImageFromTexture(betterRender->renderTarget.texture);
 }
 
-EXPORT uint32_t read_pixel(BetterRender* betterRender, int width, int height) {
-    Color color = GetImageColor(betterRender->image, width, height);
+EXPORT uint32_t read_pixel(BetterRender* betterRender, int x, int y) {
+    Color color = GetImageColor(betterRender->image, x, y);
     return packColor(color);
 }
 
