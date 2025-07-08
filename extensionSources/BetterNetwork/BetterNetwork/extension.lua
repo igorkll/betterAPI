@@ -41,6 +41,10 @@ better.network = {
         bext.checkArg(2, headers, "string", "nil")
         return networkObject(BetterNetwork.sendRequest(request, headers or ""))
     end,
+    getResult = function(request, headers)
+        checkObjectType(request, "request")
+        return networkObject(BetterNetwork.getResult(request))
+    end,
     closeRequest = function(request)
         checkObjectType(request, "request")
         return networkObject(BetterNetwork.closeRequest(request))

@@ -130,6 +130,32 @@ static int _sendRequest(lua_State* L) {
     return 1;
 }
 
+static int _getResult(lua_State* L) {
+    Request* request = (Request*)lua_touserdata(L, 1);
+    
+    WinHttpReceiveResponse(request->hRequest, NULL);
+
+    DWORD dwSize = 0;
+    DWORD dwDownloaded = 0;
+    LPSTR pszOutBuffer;
+
+    WinHttpQueryDataAvailable(request->hRequest, &dwSize);
+    
+    if (dwSize > 0) {
+        pszOutBuffer = (LPSTR)malloc(dwSize + 1);
+        if (pszOutBuffer) {
+            pszOutBuffer[dwSize] = '\0';
+            WinHttpReadData(request->hRequest, (LPVOID)pszOutBuffer, dwSize, &dwDownloaded);
+            lua_pushlstring(L, pszOutBuffer, dwSize);
+            free(pszOutBuffer);
+        }
+    } else {
+        lua_pushstring(L, "");
+    }
+
+    return 1;
+}
+
 static int _closeRequest(lua_State* L) {
     Request* request = (Request*)lua_touserdata(L, 1);
     WinHttpCloseHandle(request->hRequest);
@@ -148,6 +174,7 @@ static const struct luaL_Reg g_functions[] = {
 
     {"newRequest", _newRequest},
     {"sendRequest", _sendRequest},
+    {"getResult", _getResult},
     {"closeRequest", _closeRequest},
 
     {NULL, NULL}
