@@ -42,13 +42,13 @@ static wchar_t* convertString(const char* string_utf8) {
     }
 
     size_t len = wchars_num * sizeof(wchar_t);
-    wchar_t* string_wide = (wchar_t*)malloc(len + 1);
+    wchar_t* string_wide = (wchar_t*)malloc(len + sizeof(wchar_t));
     if (!string_wide) {
         return NULL;
     }
 
     MultiByteToWideChar(CP_UTF8, 0, string_utf8, -1, string_wide, wchars_num);
-    string_wide[len] = '\0';
+    string_wide[wchars_num] = '\0';
     return string_wide;
 }
 
