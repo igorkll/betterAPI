@@ -1,4 +1,4 @@
-# COMPILE VIA GCC (MinGW)
+# COMPILE VIA MSVC
 
 cmake_minimum_required(VERSION 4.0.2)
 project(BetterRender)

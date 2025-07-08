@@ -16,7 +16,7 @@
 #include <rlights.h>
 
 #define PACKED __attribute__((packed))
-#define EXPORT __attribute__((visibility("default")))
+#define EXPORT __declspec(dllexport)
 
 #define dmax(a, b) ((a) > (b) ? (a) : (b))
 #define dmin(a, b) ((a) < (b) ? (a) : (b))

@@ -3,22 +3,14 @@
     "configurations": [
         {
             "name": "Debug Scrap Mechanic",
-            "type": "cppdbg",
+            "type": "cppvsdbg",  // Измените тип на cppvsdbg
             "request": "launch",
             "program": "D:/Program Files (x86)/Steam/steamapps/common/Scrap Mechanic/Release/ScrapMechanic.exe",
             "args": ["-dev"],
             "stopAtEntry": false,
             "cwd": "D:/Program Files (x86)/Steam/steamapps/common/Scrap Mechanic/Release",
             "environment": [],
-            "externalConsole": false,
-            "MIMode": "gdb",
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                }
-            ]
+            "externalConsole": false
         }
     ]
 }

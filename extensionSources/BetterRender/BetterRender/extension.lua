@@ -1,7 +1,7 @@
 local better, directory = ...
 
 local ffi = require("ffi")
-local BetterRender = ffi.load(directory .. "libBetterRender.dll")
+local BetterRender = ffi.load(directory .. "BetterRender.dll")
 
 ffi.cdef[[
 typedef struct BetterRender BetterRender;
