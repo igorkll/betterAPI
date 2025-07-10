@@ -20,6 +20,7 @@
 #define dmax(a, b) ((a) > (b) ? (a) : (b))
 #define dmin(a, b) ((a) < (b) ? (a) : (b))
 
+static int usageCount = 0;
 static HINTERNET hSession;
 
 typedef struct {
@@ -55,15 +56,21 @@ static wchar_t* convertString(const char* string_utf8) {
 // -----------------------------------
 
 static int _init(lua_State* L) {
-    hSession = WinHttpOpen(L"BetterAPI - BetterNetwork",
-        WINHTTP_ACCESS_TYPE_DEFAULT_PROXY,
-        WINHTTP_NO_PROXY_NAME,
-        WINHTTP_NO_PROXY_BYPASS, 0);
+    if (usageCount == 0) {
+        hSession = WinHttpOpen(L"BetterAPI - BetterNetwork",
+            WINHTTP_ACCESS_TYPE_DEFAULT_PROXY,
+            WINHTTP_NO_PROXY_NAME,
+            WINHTTP_NO_PROXY_BYPASS, 0);
+    }
+    usageCount = usageCount + 1;
     return 0;
 }
 
 static int _deinit(lua_State* L) {
-    WinHttpCloseHandle(hSession);
+    usageCount = usageCount - 1;
+    if (usageCount == 0) {
+        WinHttpCloseHandle(hSession);
+    }
     return 0;
 }
 
