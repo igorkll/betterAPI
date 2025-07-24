@@ -12,5 +12,12 @@
         "url": "https://raw.githubusercontent.com/igorkll/betterAPI/refs/heads/main/extensions/Display_player_ID.lua",
         "version": "3",
         "author": "AlexTool"
+    },
+    {
+        "name": "BetterNetwork",
+        "format": "bext",
+        "url": "https://raw.githubusercontent.com/igorkll/betterAPI/refs/heads/main/extensions/BetterNetwork.bext",
+        "version": "0.1 BETA",
+        "author": "BananaPen"
     }
 ]
