@@ -65,19 +65,8 @@ C_FUNC static int _init(lua_State* L) {
     return 0;
 }
 
-IDXGISwapChain* g_swapChain = NULL;
-ID3D11RenderTargetView* g_renderTargetView = NULL;
-
 C_FUNC static int test(lua_State* L) {
-    ID3D11Texture2D* backBuffer = NULL;
-    g_swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&backBuffer);
-    g_device->CreateRenderTargetView(backBuffer, NULL, &g_renderTargetView);
-    backBuffer->Release();
-
-    while (true) {
-        
-        g_swapChain->Present(1, 0);
-    }
+    gameSwapChain->Present(1, 0);
 
     return 0;
 }
