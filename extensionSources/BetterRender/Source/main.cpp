@@ -15,22 +15,39 @@ extern "C" {
 }
 #include <d3d11.h>
 #include <dxgi.h>
+#include <d3dcompiler.h>
+#include <directxmath.h>
 
 #define PACKED __attribute__((packed))
 #define EXPORT __declspec(dllexport)
 #define C_FUNC extern "C"
 
+#include "render.h"
+
 // -----------------------------------
 
 static HRESULT (*gameDXGIPresent) (IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flag);
+static bool dxDeviceInited = false;
 
 LRESULT CALLBACK DummyWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
 
 HRESULT hookDXGIPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags) {
+    gameDXGIPresent(pSwapChain, SyncInterval, Flags);
 
-    return gameDXGIPresent(pSwapChain, SyncInterval, Flags);
+    ID3D11Device* device;
+    ID3D11DeviceContext* context;
+    pSwapChain->GetDevice(__uuidof(ID3D11Device), (void**)&device);
+    device->GetImmediateContext(&context);
+
+    if (!dxDeviceInited) {
+        render_init(device);
+        dxDeviceInited = true;
+    }
+    render_draw(context);
+
+    return S_OK;
 }
 
 C_FUNC static int _init(lua_State* L) {
