@@ -22,10 +22,15 @@ extern "C" {
 
 // -----------------------------------
 
-static IDXGISwapChain* gameSwapChain = NULL;
+static HRESULT (*gameDXGIPresent) (IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flag);
 
 LRESULT CALLBACK DummyWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     return DefWindowProc(hwnd, uMsg, wParam, lParam);
+}
+
+HRESULT hookDXGIPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags) {
+
+    return gameDXGIPresent(pSwapChain, SyncInterval, Flags);
 }
 
 C_FUNC static int _init(lua_State* L) {
@@ -50,7 +55,7 @@ C_FUNC static int _init(lua_State* L) {
     }
 
     // swapchain
-    gameSwapChain = NULL;
+    IDXGISwapChain* gameSwapChain = NULL;
 
     DXGI_SWAP_CHAIN_DESC swapChainDesc = {0};
     swapChainDesc.BufferCount = 1;
@@ -62,17 +67,19 @@ C_FUNC static int _init(lua_State* L) {
     swapChainDesc.SampleDesc.Count = 1;
     swapChainDesc.Windowed = TRUE;
 
-    IDXGISwapChain* swapChain = NULL;
+    IDXGISwapChain* dummySwapChain = NULL;
 
-    HRESULT hr = CreateDXGIFactory(__uuidof(IDXGIFactory), (void**)&swapChain);
+    HRESULT hr = CreateDXGIFactory(__uuidof(IDXGIFactory), (void**)&dummySwapChain);
     if (SUCCEEDED(hr)) {
         // get real swapchain
-        gameSwapChain = swapChain - 1;
-        if (swapChain) swapChain->Release();
+        gameSwapChain = dummySwapChain - 1;
+        if (dummySwapChain) dummySwapChain->Release();
     }
 
     // hook
     void** vft = *((void***)gameSwapChain);
+    gameDXGIPresent = (HRESULT(*)(IDXGISwapChain*, UINT, UINT))vft[8];
+    vft[8] = (void*)hookDXGIPresent;
 
     // delete dummy window
     DestroyWindow(hwnd);
