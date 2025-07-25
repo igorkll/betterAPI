@@ -19,5 +19,12 @@
         "url": "https://raw.githubusercontent.com/igorkll/betterAPI/refs/heads/main/extensions/BetterNetwork.bext",
         "version": "0.1 BETA",
         "author": "BananaPen"
+    },
+    {
+        "name": "NoRender",
+        "format": "bext",
+        "url": "https://raw.githubusercontent.com/igorkll/betterAPI/refs/heads/main/extensions/NoRender.bext",
+        "version": "1",
+        "author": "BananaPen"
     }
 ]

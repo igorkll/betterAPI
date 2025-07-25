@@ -1,0 +1,16 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug in Scrap Mechanic",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "D:/Program Files (x86)/Steam/steamapps/common/Scrap Mechanic/Release/ScrapMechanic.exe",
+            "args": ["-dev"],
+            "stopAtEntry": false,
+            "cwd": "D:/Program Files (x86)/Steam/steamapps/common/Scrap Mechanic/Release",
+            "environment": [],
+            "console": "externalTerminal"
+        }
+    ]
+}
