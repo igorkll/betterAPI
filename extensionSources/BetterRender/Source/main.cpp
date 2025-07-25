@@ -55,8 +55,6 @@ C_FUNC static int _init(lua_State* L) {
     }
 
     // swapchain
-    IDXGISwapChain* gameSwapChain = NULL;
-
     DXGI_SWAP_CHAIN_DESC swapChainDesc = {0};
     swapChainDesc.BufferCount = 1;
     swapChainDesc.BufferDesc.Width = 100;
@@ -70,19 +68,18 @@ C_FUNC static int _init(lua_State* L) {
     IDXGISwapChain* dummySwapChain = NULL;
 
     HRESULT hr = CreateDXGIFactory(__uuidof(IDXGIFactory), (void**)&dummySwapChain);
-    if (SUCCEEDED(hr)) {
-        // get real swapchain
-        gameSwapChain = dummySwapChain - 1;
-        if (dummySwapChain) dummySwapChain->Release();
+    if (FAILED(hr)) {
+        return 0;
     }
 
     // hook
-    void** vft = *((void***)gameSwapChain);
+    void** vft = *((void***)dummySwapChain);
     gameDXGIPresent = (HRESULT(*)(IDXGISwapChain*, UINT, UINT))vft[8];
     vft[8] = (void*)hookDXGIPresent;
 
-    // delete dummy window
+    // delete dummy window and swapchain
     DestroyWindow(hwnd);
+    if (dummySwapChain) dummySwapChain->Release();
 
     return 0;
 }
