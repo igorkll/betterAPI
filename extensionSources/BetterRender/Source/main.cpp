@@ -66,8 +66,23 @@ C_FUNC static int _init(lua_State* L) {
     swapChainDesc.Windowed = TRUE;
 
     IDXGISwapChain* dummySwapChain = NULL;
+    ID3D11Device* dummyDevice = NULL;
+    ID3D11DeviceContext* dummyContext = NULL;
 
-    HRESULT hr = CreateDXGIFactory(__uuidof(IDXGIFactory), (void**)&dummySwapChain);
+    HRESULT hr = D3D11CreateDeviceAndSwapChain(
+        NULL,
+        D3D_DRIVER_TYPE_HARDWARE,
+        NULL,
+        0,
+        NULL,
+        0,
+        D3D11_SDK_VERSION,
+        &swapChainDesc,
+        &dummySwapChain,
+        &dummyDevice,
+        NULL,
+        &dummyContext
+    );
     if (FAILED(hr)) {
         return 0;
     }
