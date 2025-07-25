@@ -29,6 +29,7 @@ LRESULT CALLBACK DummyWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 }
 
 C_FUNC static int _init(lua_State* L) {
+    // dummy windows
     HINSTANCE hInstance = GetModuleHandle(NULL);
 
     const char CLASS_NAME[] = "DummyWindowClass";
@@ -48,6 +49,9 @@ C_FUNC static int _init(lua_State* L) {
         return 0;
     }
 
+    // swapchain
+    gameSwapChain = NULL;
+
     DXGI_SWAP_CHAIN_DESC swapChainDesc = {0};
     swapChainDesc.BufferCount = 1;
     swapChainDesc.BufferDesc.Width = 100;
@@ -62,15 +66,22 @@ C_FUNC static int _init(lua_State* L) {
 
     HRESULT hr = CreateDXGIFactory(__uuidof(IDXGIFactory), (void**)&swapChain);
     if (SUCCEEDED(hr)) {
+        // get real swapchain
         gameSwapChain = swapChain - 1;
         if (swapChain) swapChain->Release();
     }
+
+    // hook
+    void** vft = *((void***)gameSwapChain);
+
+    // delete dummy window
+    DestroyWindow(hwnd);
 
     return 0;
 }
 
 C_FUNC static int test(lua_State* L) {
-    gameSwapChain->Present(1, 0);
+    
 
     return 0;
 }
