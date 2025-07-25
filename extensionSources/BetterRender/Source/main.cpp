@@ -98,6 +98,8 @@ C_FUNC static int _init(lua_State* L) {
     // delete dummy window and swapchain
     DestroyWindow(hwnd);
     if (dummySwapChain) dummySwapChain->Release();
+    if (dummyContext) dummyContext->Release();
+    if (dummyDevice) dummyDevice->Release();
 
     return 0;
 }
