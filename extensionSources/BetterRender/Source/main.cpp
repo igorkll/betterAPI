@@ -8,7 +8,11 @@
 #include <math.h>
 #include <windows.h>
 #include <sys/stat.h>
-#include <luajit/lua.hpp>
+extern "C" {
+    #include <luajit/lua.h>
+    #include <luajit/lauxlib.h>
+    #include <luajit/lualib.h>
+}
 #include <d3d11.h>
 #include <dxgi.h>
 
@@ -61,8 +65,6 @@ C_FUNC static int _init(lua_State* L) {
     return 0;
 }
 
-ID3D11Device* g_device = NULL;
-ID3D11DeviceContext* g_context = NULL;
 IDXGISwapChain* g_swapChain = NULL;
 ID3D11RenderTargetView* g_renderTargetView = NULL;
 
