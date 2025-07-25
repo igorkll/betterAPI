@@ -54,7 +54,7 @@ C_FUNC static int _init(lua_State* L) {
         return 0;
     }
 
-    // swapchain
+    // create dummy swapchain
     DXGI_SWAP_CHAIN_DESC swapChainDesc = {0};
     swapChainDesc.BufferCount = 1;
     swapChainDesc.BufferDesc.Width = 100;
@@ -72,7 +72,7 @@ C_FUNC static int _init(lua_State* L) {
         return 0;
     }
 
-    // hook
+    // make hook
     void** vft = *((void***)dummySwapChain);
     gameDXGIPresent = (HRESULT(*)(IDXGISwapChain*, UINT, UINT))vft[8];
     vft[8] = (void*)hookDXGIPresent;
