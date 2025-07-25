@@ -24,12 +24,16 @@ extern "C" {
 
 static IDXGISwapChain* gameSwapChain = NULL;
 
+LRESULT CALLBACK DummyWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+    return DefWindowProc(hwnd, uMsg, wParam, lParam);
+}
+
 C_FUNC static int _init(lua_State* L) {
     HINSTANCE hInstance = GetModuleHandle(NULL);
 
     const char CLASS_NAME[] = "DummyWindowClass";
     WNDCLASS wc = {0};
-    wc.lpfnWndProc = NULL;
+    wc.lpfnWndProc = DummyWndProc;
     wc.hInstance = hInstance;
     wc.lpszClassName = CLASS_NAME;
     RegisterClass(&wc);
