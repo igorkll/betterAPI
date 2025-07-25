@@ -21,4 +21,4 @@ include_directories(${CMAKE_SOURCE_DIR}/../libs)
 target_link_libraries(BetterRender PRIVATE ${CMAKE_SOURCE_DIR}/../libs/luajit/lua51.lib)
 
 # winapi
-target_link_libraries(BetterRender PRIVATE winhttp user32)
+target_link_libraries(BetterRender PRIVATE winhttp user32 dxgi)

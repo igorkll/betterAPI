@@ -8,9 +8,11 @@
 #include <math.h>
 #include <windows.h>
 #include <sys/stat.h>
-#include <luajit/lua.h>
-#include <luajit/lauxlib.h>
-#include <luajit/lualib.h>
+extern "C" {
+    #include <luajit/lua.h>
+    #include <luajit/lauxlib.h>
+    #include <luajit/lualib.h>
+}
 #include <d3d11.h>
 #include <dxgi.h>
 
@@ -22,7 +24,7 @@
 
 static IDXGISwapChain* gameSwapChain = NULL;
 
-static void _init() {
+extern "C" static int _init(lua_State* L) {
     HINSTANCE hInstance = GetModuleHandle(NULL);
 
     const char CLASS_NAME[] = "DummyWindowClass";
@@ -39,7 +41,7 @@ static void _init() {
     );
 
     if (hwnd == NULL) {
-        return;
+        return 0;
     }
 
     DXGI_SWAP_CHAIN_DESC swapChainDesc = {0};
@@ -54,22 +56,44 @@ static void _init() {
 
     IDXGISwapChain* swapChain = NULL;
 
-    HRESULT hr = CreateDXGIFactory(&IID_IDXGIFactory, (void**)&swapChain);
+    HRESULT hr = CreateDXGIFactory(__uuidof(IDXGIFactory), (void**)&swapChain);
     if (SUCCEEDED(hr)) {
         gameSwapChain = swapChain - 1;
         if (swapChain) swapChain->Release();
     }
+
+    return 0;
+}
+
+ID3D11Device* g_device = NULL;
+ID3D11DeviceContext* g_context = NULL;
+IDXGISwapChain* g_swapChain = NULL;
+ID3D11RenderTargetView* g_renderTargetView = NULL;
+
+extern "C" static int test(lua_State* L) {
+    ID3D11Texture2D* backBuffer = NULL;
+    g_swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&backBuffer);
+    g_device->CreateRenderTargetView(backBuffer, NULL, &g_renderTargetView);
+    backBuffer->Release();
+
+    while (true) {
+        
+        g_swapChain->Present(1, 0);
+    }
+
+    return 0;
 }
 
 // -----------------------------------
 
 static const struct luaL_Reg g_functions[] = {
     {"_init", _init},
+    {"test", test},
     
     {NULL, NULL}
 };
 
-EXPORT int luaopen_BetterRender(lua_State * L) {
+EXPORT int luaopen_BetterRender(lua_State* L) {
     luaL_register(L, "BetterRender", g_functions);
 
     return 1;
