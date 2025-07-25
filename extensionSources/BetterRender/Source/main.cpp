@@ -74,8 +74,11 @@ C_FUNC static int _init(lua_State* L) {
 
     // make hook
     void** vft = *((void***)dummySwapChain);
+    DWORD oldProtect;
+    VirtualProtect(&vft[8], sizeof(void*), PAGE_EXECUTE_READWRITE, &oldProtect);
     gameDXGIPresent = (HRESULT(*)(IDXGISwapChain*, UINT, UINT))vft[8];
     vft[8] = (void*)hookDXGIPresent;
+    VirtualProtect(&vft[8], sizeof(void*), oldProtect, &oldProtect);
 
     // delete dummy window and swapchain
     DestroyWindow(hwnd);
