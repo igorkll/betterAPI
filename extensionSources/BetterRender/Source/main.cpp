@@ -25,56 +25,16 @@ extern "C" {
 // -----------------------------------
 
 static HRESULT (*gameDXGIPresent) (IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flag);
-static ID3D11Device* device = NULL;
-static ID3D11DeviceContext* context = NULL;
-static ID3D11Texture2D* overlayTexture;
+static ID3D11Device* dxDevice = NULL;
+static ID3D11DeviceContext* dxContext = NULL;
 
 HRESULT hookDXGIPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags) {
     gameDXGIPresent(pSwapChain, SyncInterval, Flags);
 
-    if (!device) {
-        pSwapChain->GetDevice(__uuidof(ID3D11Device), (void**)&device);
-        device->GetImmediateContext(&context);
-
-        D3D11_TEXTURE2D_DESC textureDesc = {};
-        textureDesc.Width = 256;
-        textureDesc.Height = 256;
-        textureDesc.MipLevels = 1;
-        textureDesc.ArraySize = 1;
-        textureDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-        textureDesc.SampleDesc.Count = 1;
-        textureDesc.Usage = D3D11_USAGE_DYNAMIC;
-        textureDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
-        textureDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-
-        device->CreateTexture2D(&textureDesc, nullptr, &overlayTexture);
+    if (!dxDevice) {
+        pSwapChain->GetDevice(__uuidof(ID3D11Device), (void**)&dxDevice);
+        dxDevice->GetImmediateContext(&dxContext);
     }
-
-    D3D11_MAPPED_SUBRESOURCE mappedResource;
-    context->Map(overlayTexture, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
-    unsigned char* data = static_cast<unsigned char*>(mappedResource.pData);
-
-    int x = 100;
-    int y = 100;
-    unsigned char color[4] = {255, 0, 0, 255};
-
-    for (int j = 0; j < textureDesc.Height; ++j) {
-        for (int i = 0; i < textureDesc.Width; ++i) {
-            if (i == x && j == y) {
-                data[(j * textureDesc.Width + i) * 4 + 0] = color[0]; // R
-                data[(j * textureDesc.Width + i) * 4 + 1] = color[1]; // G
-                data[(j * textureDesc.Width + i) * 4 + 2] = color[2]; // B
-                data[(j * textureDesc.Width + i) * 4 + 3] = color[3]; // A
-            } else {
-                data[(j * textureDesc.Width + i) * 4 + 0] = 0; // R
-                data[(j * textureDesc.Width + i) * 4 + 1] = 0; // G
-                data[(j * textureDesc.Width + i) * 4 + 2] = 0; // B
-                data[(j * textureDesc.Width + i) * 4 + 3] = 255; // A
-            }
-        }
-    }
-
-    context->Unmap(texture, 0);
 
     return S_OK;
 }
