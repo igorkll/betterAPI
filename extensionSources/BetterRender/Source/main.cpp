@@ -22,32 +22,60 @@ extern "C" {
 #define EXPORT __declspec(dllexport)
 #define C_FUNC extern "C"
 
-#include "render.h"
-
 // -----------------------------------
 
 static HRESULT (*gameDXGIPresent) (IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flag);
-static bool dxDeviceInited = false;
-
-LRESULT CALLBACK DummyWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
-    return DefWindowProc(hwnd, uMsg, wParam, lParam);
-}
+static ID3D11Device* device = NULL;
+static ID3D11DeviceContext* context = NULL;
+static ID3D11Texture2D* overlayTexture;
+static ID3D11RenderTargetView* overlayRender;
 
 HRESULT hookDXGIPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags) {
     gameDXGIPresent(pSwapChain, SyncInterval, Flags);
 
-    ID3D11Device* device;
-    ID3D11DeviceContext* context;
-    pSwapChain->GetDevice(__uuidof(ID3D11Device), (void**)&device);
-    device->GetImmediateContext(&context);
+    if (!device) {
+        pSwapChain->GetDevice(__uuidof(ID3D11Device), (void**)&device);
+        device->GetImmediateContext(&context);
 
-    if (!dxDeviceInited) {
-        render_init(device);
-        dxDeviceInited = true;
+        D3D11_TEXTURE2D_DESC textureDesc = {};
+        textureDesc.Width = 512; // Ширина текстуры
+        textureDesc.Height = 512; // Высота текстуры
+        textureDesc.MipLevels = 1; // Количество уровней мипмапинга
+        textureDesc.ArraySize = 1; // Количество текстур в массиве
+        textureDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM; // Формат текстуры
+        textureDesc.SampleDesc.Count = 1; // Количество образцов
+        textureDesc.Usage = D3D11_USAGE_DEFAULT; // Использование текстуры
+        textureDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE; // Флаги привязки
+        textureDesc.CPUAccessFlags = 0;
+
+        device->CreateTexture2D(&textureDesc, nullptr, &overlayTexture);
+        device->CreateRenderTargetView(overlayTexture, nullptr, &overlayRender);
+        context->OMSetRenderTargets(1, &overlayRender, nullptr);
     }
-    render_draw(context);
+
+    float colorTop[] = { 0.0f, 0.0f, 1.0f, 1.0f };
+    float colorBottom[] = { 1.0f, 0.0f, 0.0f, 1.0f };
+
+    for (int y = 0; y < 600; ++y) {
+        float t = static_cast<float>(y) / 600.0f;
+        float color[] = {
+            colorTop[0] * (1 - t) + colorBottom[0] * t,
+            colorTop[1] * (1 - t) + colorBottom[1] * t,
+            colorTop[2] * (1 - t) + colorBottom[2] * t,
+            1.0f
+        };
+        context->ClearRenderTargetView(overlayRender, color);
+        context->OMSetRenderTargets(1, &overlayRender, nullptr);
+        context->Draw(3, 0);
+    }
 
     return S_OK;
+}
+
+// -----------------------------------
+
+LRESULT CALLBACK DummyWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+    return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
 
 C_FUNC static int _init(lua_State* L) {
