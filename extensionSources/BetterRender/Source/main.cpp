@@ -28,15 +28,66 @@ static HRESULT (*gameDXGIPresent) (IDXGISwapChain* pSwapChain, UINT SyncInterval
 static ID3D11Device* dxDevice = NULL;
 static ID3D11DeviceContext* dxContext = NULL;
 
-HRESULT hookDXGIPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags) {
-    gameDXGIPresent(pSwapChain, SyncInterval, Flags);
+typedef struct {
+    ID3D11Texture2D* texture;
+    ID3D11ShaderResourceView* textureView;
+} RenderTarget;
 
+static RenderTarget* createRenderTarget_screen() {
+    RenderTarget* renderTarget = (RenderTarget*)malloc(sizeof(RenderTarget));
+
+    D3D11_TEXTURE2D_DESC textureDesc = {0};
+    ZeroMemory(&textureDesc, sizeof(textureDesc));
+    textureDesc.Width = 256;
+    textureDesc.Height = 256;
+    textureDesc.MipLevels = 1;
+    textureDesc.ArraySize = 1;
+    textureDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    textureDesc.SampleDesc.Count = 1;
+    textureDesc.Usage = D3D11_USAGE_DEFAULT;
+    textureDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+    textureDesc.CPUAccessFlags = 0;
+
+    UINT32* textureData = (UINT32*)malloc(textureDesc.Width * textureDesc.Height * sizeof(UINT32));
+    for (size_t ix = 0; ix < textureDesc.Width; ix++) {
+        for (size_t iy = 0; iy < textureDesc.Height; iy++) {
+            textureData[ix + (iy * textureDesc.Width)] = 0xFFFF0000;
+        }
+    }
+
+    D3D11_SUBRESOURCE_DATA initData = {0};
+    initData.pSysMem = textureData;
+    initData.SysMemPitch = textureDesc.Width * sizeof(UINT32);
+    
+    HRESULT hr = dxDevice->CreateTexture2D(&textureDesc, nullptr, &renderTarget->texture);
+    assert(hr);
+    free(textureData);
+
+    hr = dxDevice->CreateShaderResourceView(renderTarget->texture, nullptr, &renderTarget->textureView);
+    assert(hr);
+
+    return renderTarget;
+}
+
+static void freeRenderTarget(RenderTarget* renderTarget) {
+    renderTarget->textureView->Release();
+    renderTarget->texture->Release();
+    free(renderTarget);
+}
+
+static void render() {
+    
+}
+
+HRESULT hookDXGIPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags) {
     if (!dxDevice) {
         pSwapChain->GetDevice(__uuidof(ID3D11Device), (void**)&dxDevice);
         dxDevice->GetImmediateContext(&dxContext);
     }
 
-    return S_OK;
+
+
+    return gameDXGIPresent(pSwapChain, SyncInterval, Flags);
 }
 
 // -----------------------------------
