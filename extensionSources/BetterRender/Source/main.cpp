@@ -24,12 +24,20 @@ extern "C" {
 #define EXPORT __declspec(dllexport)
 #define C_FUNC extern "C"
 
+using namespace DirectX;
+
 // ----------------------------------- globals
 
 static ID3D11Device* dxDevice = NULL;
 static ID3D11DeviceContext* dxContext = NULL;
+static DXGI_SWAP_CHAIN_DESC dxInfo;
 
-// ----------------------------------- shaders
+// ----------------------------------- resources
+
+typedef struct {
+    float x, y;
+    float u, v;
+} Vertex;
 
 const char* shader_screen_code_v = R"(
     struct VS_IN {
@@ -59,20 +67,37 @@ const char* shader_screen_code_p = R"(
     }
 )";
 
-ID3D11VertexShader* shader_screen_v;
-ID3D11PixelShader* shader_screen_p;
+static ID3D11VertexShader* shader_screen_v;
+static ID3D11PixelShader* shader_screen_p;
+static ID3D11Buffer* vertex_buffer;
+static ID3D11Buffer* index_buffer;
 
-static void shaders_create_screen() {
+static void resources_init() {
+    // screen shaders
     ID3DBlob *vsBlob, *psBlob;
     D3DCompile(shader_screen_code_v, strlen(shader_screen_code_v), nullptr, nullptr, nullptr, "VS", "vs_5_0", 0, 0, &vsBlob, nullptr);
     D3DCompile(shader_screen_code_p, strlen(shader_screen_code_p), nullptr, nullptr, nullptr, "PS", "ps_5_0", 0, 0, &psBlob, nullptr);
 
     dxDevice->CreateVertexShader(vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), nullptr, &shader_screen_v);
     dxDevice->CreatePixelShader(psBlob->GetBufferPointer(), psBlob->GetBufferSize(), nullptr, &shader_screen_p);
-}
 
-static void shaders_init() {
-    shaders_create_screen();
+    // vertices and indices
+    Vertex vertices[] = {
+        { -0.5f,  0.5f, 0.0f, 0.0f },
+        {  0.5f,  0.5f, 1.0f, 0.0f },
+        {  0.5f, -0.5f, 1.0f, 1.0f },
+        { -0.5f, -0.5f, 0.0f, 1.0f }
+    };
+
+    WORD indices[] = { 0, 1, 2, 0, 2, 3 };
+
+    D3D11_BUFFER_DESC vbd = { sizeof(vertices), D3D11_USAGE_IMMUTABLE, D3D11_BIND_VERTEX_BUFFER };
+    D3D11_SUBRESOURCE_DATA vinitData = { vertices };
+    dxDevice->CreateBuffer(&vbd, &vinitData, &vertex_buffer);
+
+    D3D11_BUFFER_DESC ibd = { sizeof(indices), D3D11_USAGE_IMMUTABLE, D3D11_BIND_INDEX_BUFFER };
+    D3D11_SUBRESOURCE_DATA iinitData = { indices };
+    dxDevice->CreateBuffer(&ibd, &iinitData, &index_buffer);
 }
 
 // ----------------------------------- render target
@@ -134,14 +159,34 @@ static void RenderTarget_free(RenderTarget* renderTarget) {
 }
 
 static void RenderTarget_draw(RenderTarget* renderTarget) {
+    float posX = 100.0f;
+    float posY = 200.0f;
+    float scale = 1.0f;
+
+    XMMATRIX worldMatrix = XMMatrixScaling(scale, scale, 1.0f) * XMMatrixTranslation(posX / dxInfo.BufferDesc.Width * 2 - 1, -posY / dxInfo.BufferDesc.Height * 2 + 1, 0.0f);
+
+    struct ConstantBuffer {
+        XMMATRIX transform;
+    };
+
+    ID3D11Buffer* constantBuffer;
+    D3D11_BUFFER_DESC cbDesc = { sizeof(ConstantBuffer), D3D11_USAGE_DYNAMIC, D3D11_BIND_CONSTANT_BUFFER, D3D11_CPU_ACCESS_WRITE };
+    dxDevice->CreateBuffer(&cbDesc, nullptr, &constantBuffer);
+
+    D3D11_MAPPED_SUBRESOURCE mappedResource;
+    dxContext->Map(constantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
+    memcpy(mappedResource.pData, &worldMatrix, sizeof(XMMATRIX));
+    dxContext->Unmap(constantBuffer, 0);
+
+    // -----------------------------------
     dxContext->VSSetShader(shader_screen_v, nullptr, 0);
     dxContext->PSSetShader(shader_screen_p, nullptr, 0);
     dxContext->PSSetShaderResources(0, 1, &renderTarget->textureView);
 
     UINT stride = sizeof(Vertex);
     UINT offset = 0;
-    dxContext->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
-    dxContext->IASetIndexBuffer(indexBuffer, DXGI_FORMAT_R16_UINT, 0);
+    dxContext->IASetVertexBuffers(0, 1, &vertex_buffer, &stride, &offset);
+    dxContext->IASetIndexBuffer(index_buffer, DXGI_FORMAT_R16_UINT, 0);
     dxContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
     dxContext->DrawIndexed(6, 0, 0);
@@ -150,6 +195,7 @@ static void RenderTarget_draw(RenderTarget* renderTarget) {
 HRESULT hookDXGIPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags) {
     if (!dxDevice) {
         pSwapChain->GetDevice(__uuidof(ID3D11Device), (void**)&dxDevice);
+        pSwapChain->GetDesc(&dxInfo);
         dxDevice->GetImmediateContext(&dxContext);
     }
 
@@ -240,7 +286,7 @@ C_FUNC static int _init(lua_State* L) {
     if (dummyDevice) dummyDevice->Release();
 
     // init resources
-    shaders_init();
+    resources_init();
 
     return 0;
 }
