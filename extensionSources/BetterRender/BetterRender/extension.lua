@@ -1,3 +1,4 @@
 local better, directory = ...
-
-better.render = require("BetterRender")
+local render = require("BetterRender")
+render._init()
+better.render = render
