@@ -137,11 +137,11 @@ static RenderTarget* RenderTarget_create_screen() {
     initData.SysMemPitch = textureDesc.Width * sizeof(UINT32);
     
     HRESULT hr = dxDevice->CreateTexture2D(&textureDesc, nullptr, &renderTarget->texture);
-    assert(hr);
+    if (FAILED(hr)) abort();
     free(textureData);
 
     hr = dxDevice->CreateShaderResourceView(renderTarget->texture, nullptr, &renderTarget->textureView);
-    assert(hr);
+    if (FAILED(hr)) abort();
 
     renderTargets.push_back(renderTarget);
     return renderTarget;
