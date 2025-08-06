@@ -197,6 +197,7 @@ HRESULT hookDXGIPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flag
         pSwapChain->GetDevice(__uuidof(ID3D11Device), (void**)&dxDevice);
         pSwapChain->GetDesc(&dxInfo);
         dxDevice->GetImmediateContext(&dxContext);
+        resources_init();
     }
 
     for (RenderTarget* renderTarget : renderTargets) {
@@ -284,9 +285,6 @@ C_FUNC static int _init(lua_State* L) {
     if (dummySwapChain) dummySwapChain->Release();
     if (dummyContext) dummyContext->Release();
     if (dummyDevice) dummyDevice->Release();
-
-    // init resources
-    resources_init();
 
     return 0;
 }
