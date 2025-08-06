@@ -24,7 +24,58 @@ extern "C" {
 #define EXPORT __declspec(dllexport)
 #define C_FUNC extern "C"
 
-// -----------------------------------
+// ----------------------------------- globals
+
+static ID3D11Device* dxDevice = NULL;
+static ID3D11DeviceContext* dxContext = NULL;
+
+// ----------------------------------- shaders
+
+const char* shader_screen_code_v = R"(
+    struct VS_IN {
+        float2 pos : POSITION;
+        float2 uv : TEXCOORD;
+    };
+
+    struct VS_OUT {
+        float4 pos : SV_POSITION;
+        float2 uv : TEXCOORD;
+    };
+
+    VS_OUT VS(VS_IN input) {
+        VS_OUT output;
+        output.pos = float4(input.pos, 0.0, 1.0);
+        output.uv = input.uv;
+        return output;
+    }
+)";
+
+const char* shader_screen_code_p = R"(
+    Texture2D tex;
+    SamplerState samp;
+
+    float4 PS(VS_OUT input) : SV_TARGET {
+        return tex.Sample(samp, input.uv);
+    }
+)";
+
+ID3D11VertexShader* shader_screen_v;
+ID3D11PixelShader* shader_screen_p;
+
+static void shaders_create_screen() {
+    ID3DBlob *vsBlob, *psBlob;
+    D3DCompile(shader_screen_code_v, strlen(shader_screen_code_v), nullptr, nullptr, nullptr, "VS", "vs_5_0", 0, 0, &vsBlob, nullptr);
+    D3DCompile(shader_screen_code_p, strlen(shader_screen_code_p), nullptr, nullptr, nullptr, "PS", "ps_5_0", 0, 0, &psBlob, nullptr);
+
+    dxDevice->CreateVertexShader(vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), nullptr, &shader_screen_v);
+    dxDevice->CreatePixelShader(psBlob->GetBufferPointer(), psBlob->GetBufferSize(), nullptr, &shader_screen_p);
+}
+
+static void shaders_init() {
+    shaders_create_screen();
+}
+
+// ----------------------------------- render target
 
 typedef struct {
     ID3D11Texture2D* texture;
@@ -32,11 +83,9 @@ typedef struct {
 } RenderTarget;
 
 static HRESULT (*gameDXGIPresent) (IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flag);
-static ID3D11Device* dxDevice = NULL;
-static ID3D11DeviceContext* dxContext = NULL;
 static std::vector<RenderTarget*> renderTargets;
 
-static RenderTarget* createRenderTarget_screen() {
+static RenderTarget* RenderTarget_create_screen() {
     RenderTarget* renderTarget = (RenderTarget*)malloc(sizeof(RenderTarget));
 
     D3D11_TEXTURE2D_DESC textureDesc = {0};
@@ -73,7 +122,7 @@ static RenderTarget* createRenderTarget_screen() {
     return renderTarget;
 }
 
-static void freeRenderTarget(RenderTarget* renderTarget) {
+static void RenderTarget_free(RenderTarget* renderTarget) {
     auto it = std::find(renderTargets.begin(), renderTargets.end(), renderTarget);
     if (it != renderTargets.end()) {
         renderTargets.erase(it);
@@ -84,8 +133,18 @@ static void freeRenderTarget(RenderTarget* renderTarget) {
     free(renderTarget);
 }
 
-static void render() {
-    
+static void RenderTarget_draw(RenderTarget* renderTarget) {
+    dxContext->VSSetShader(shader_screen_v, nullptr, 0);
+    dxContext->PSSetShader(shader_screen_p, nullptr, 0);
+    dxContext->PSSetShaderResources(0, 1, &renderTarget->textureView);
+
+    UINT stride = sizeof(Vertex);
+    UINT offset = 0;
+    dxContext->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
+    dxContext->IASetIndexBuffer(indexBuffer, DXGI_FORMAT_R16_UINT, 0);
+    dxContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+    dxContext->DrawIndexed(6, 0, 0);
 }
 
 HRESULT hookDXGIPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags) {
@@ -95,13 +154,13 @@ HRESULT hookDXGIPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flag
     }
 
     for (RenderTarget* renderTarget : renderTargets) {
-        
+        RenderTarget_draw(renderTarget);
     }
 
     return gameDXGIPresent(pSwapChain, SyncInterval, Flags);
 }
 
-// -----------------------------------
+// ----------------------------------- hook
 
 static bool hookEnabled = false;
 
@@ -180,11 +239,16 @@ C_FUNC static int _init(lua_State* L) {
     if (dummyContext) dummyContext->Release();
     if (dummyDevice) dummyDevice->Release();
 
+    // init resources
+    shaders_init();
+
     return 0;
 }
 
+// ----------------------------------- api
+
 C_FUNC static int test(lua_State* L) {
-    createRenderTarget_screen();
+    RenderTarget_create_screen();
 
     return 0;
 }
