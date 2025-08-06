@@ -17,6 +17,8 @@ extern "C" {
 #include <dxgi.h>
 #include <d3dcompiler.h>
 #include <directxmath.h>
+#include <vector>
+#include <algorithm>
 
 #define PACKED __attribute__((packed))
 #define EXPORT __declspec(dllexport)
@@ -24,14 +26,15 @@ extern "C" {
 
 // -----------------------------------
 
-static HRESULT (*gameDXGIPresent) (IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flag);
-static ID3D11Device* dxDevice = NULL;
-static ID3D11DeviceContext* dxContext = NULL;
-
 typedef struct {
     ID3D11Texture2D* texture;
     ID3D11ShaderResourceView* textureView;
 } RenderTarget;
+
+static HRESULT (*gameDXGIPresent) (IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flag);
+static ID3D11Device* dxDevice = NULL;
+static ID3D11DeviceContext* dxContext = NULL;
+static std::vector<RenderTarget*> renderTargets;
 
 static RenderTarget* createRenderTarget_screen() {
     RenderTarget* renderTarget = (RenderTarget*)malloc(sizeof(RenderTarget));
@@ -66,10 +69,16 @@ static RenderTarget* createRenderTarget_screen() {
     hr = dxDevice->CreateShaderResourceView(renderTarget->texture, nullptr, &renderTarget->textureView);
     assert(hr);
 
+    renderTargets.push_back(renderTarget);
     return renderTarget;
 }
 
 static void freeRenderTarget(RenderTarget* renderTarget) {
+    auto it = std::find(renderTargets.begin(), renderTargets.end(), renderTarget);
+    if (it != renderTargets.end()) {
+        renderTargets.erase(it);
+    }
+
     renderTarget->textureView->Release();
     renderTarget->texture->Release();
     free(renderTarget);
@@ -85,7 +94,9 @@ HRESULT hookDXGIPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flag
         dxDevice->GetImmediateContext(&dxContext);
     }
 
-
+    for (RenderTarget* renderTarget : renderTargets) {
+        
+    }
 
     return gameDXGIPresent(pSwapChain, SyncInterval, Flags);
 }
@@ -173,7 +184,7 @@ C_FUNC static int _init(lua_State* L) {
 }
 
 C_FUNC static int test(lua_State* L) {
-    
+    createRenderTarget_screen();
 
     return 0;
 }
