@@ -59,8 +59,13 @@ const char* shader_screen_code_v = R"(
 )";
 
 const char* shader_screen_code_p = R"(
-    Texture2D tex;
-    SamplerState samp;
+    struct VS_OUT {
+        float4 pos : SV_POSITION;
+        float2 uv : TEXCOORD0;
+    };
+
+    Texture2D tex : register(t0);
+    SamplerState samp : register(s0);
 
     float4 PS(VS_OUT input) : SV_TARGET {
         return tex.Sample(samp, input.uv);
@@ -72,11 +77,28 @@ static ID3D11PixelShader* shader_screen_p;
 static ID3D11Buffer* vertex_buffer;
 static ID3D11Buffer* index_buffer;
 
+static void check_dx_error(HRESULT hr, ID3DBlob* errorBlob) {
+    if (FAILED(hr)) {
+        if (errorBlob) {
+            OutputDebugStringA((char*)errorBlob->GetBufferPointer());
+            errorBlob->Release();
+        } else {
+            OutputDebugStringA("unknown dx error");
+        }
+        abort();
+    }
+}
+
 static void resources_init() {
     // screen shaders
-    ID3DBlob *vsBlob, *psBlob;
-    D3DCompile(shader_screen_code_v, strlen(shader_screen_code_v), nullptr, nullptr, nullptr, "VS", "vs_5_0", 0, 0, &vsBlob, nullptr);
-    D3DCompile(shader_screen_code_p, strlen(shader_screen_code_p), nullptr, nullptr, nullptr, "PS", "ps_5_0", 0, 0, &psBlob, nullptr);
+    ID3DBlob* errorBlob = nullptr;
+    ID3DBlob* vsBlob;
+    ID3DBlob* psBlob;
+    
+    HRESULT hr = D3DCompile(shader_screen_code_v, strlen(shader_screen_code_v), nullptr, nullptr, nullptr, "VS", "vs_5_0", 0, 0, &vsBlob, &errorBlob);
+    check_dx_error(hr, errorBlob);
+    hr = D3DCompile(shader_screen_code_p, strlen(shader_screen_code_p), nullptr, nullptr, nullptr, "PS", "ps_5_0", 0, 0, &psBlob, &errorBlob);
+    check_dx_error(hr, errorBlob);
 
     dxDevice->CreateVertexShader(vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), nullptr, &shader_screen_v);
     dxDevice->CreatePixelShader(psBlob->GetBufferPointer(), psBlob->GetBufferSize(), nullptr, &shader_screen_p);
