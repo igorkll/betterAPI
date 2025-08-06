@@ -158,7 +158,7 @@ static RenderTarget* RenderTarget_create_screen() {
     initData.pSysMem = textureData;
     initData.SysMemPitch = textureDesc.Width * sizeof(UINT32);
     
-    HRESULT hr = dxDevice->CreateTexture2D(&textureDesc, nullptr, &renderTarget->texture);
+    HRESULT hr = dxDevice->CreateTexture2D(&textureDesc, &initData, &renderTarget->texture);
     if (FAILED(hr)) abort();
     free(textureData);
 
