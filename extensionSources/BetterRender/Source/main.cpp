@@ -39,72 +39,35 @@ typedef struct {
     float u, v;
 } Vertex;
 
-typedef struct {
-    float pos[2];
-    float size[2];
-    float screen[2];
-} ShaderParams;
-
 const char* shader_screen_code_v = R"(
-    cbuffer Params : register(b0) {
-        float2 pos;    // Позиция (в пикселях)
-        float2 size;   // Размер (в пикселях)
-        float2 screen; // Разрешение экрана (ширина, высота)
-    };
-
-    struct VS_OUT {
-        float4 pos : SV_Position;
-        float2 uv  : TEXCOORD;
-    };
-
-    VS_OUT VS(uint vertexID : SV_VertexID) {
-        VS_OUT output;
-        
-        // Генерация 4 вершин (квад) через vertexID (0,1,2,3)
-        float2 vertices[4] = {
-            float2(0, 0), // Верхний левый
-            float2(1, 0),  // Верхний правый
-            float2(0, 1),  // Нижний левый
-            float2(1, 1)   // Нижний правый
-        };
-
-        // Преобразуем локальные координаты (0-1) в экранные (пиксели)
-        float2 vertexPos = pos + vertices[vertexID] * size;
-
-        // Конвертируем в NDC [-1, 1] (DirectX 11)
-        output.pos = float4(
-            (vertexPos.x / screen.x) * 2.0f - 1.0f,
-            -(vertexPos.y / screen.y) * 2.0f + 1.0f, // Ось Y инвертирована
-            0.0f,
-            1.0f
-        );
-
-        // UV-координаты (0-1)
-        output.uv = vertices[vertexID];
-
-        return output;
+    void VS(uint id : SV_VertexID, out float4 position : SV_Position, out float2 uv : TEXCOORD)
+    {
+        uv = float2((id << 1) & 2, id & 2);
+        position = float4(uv * float2(2, -2) + float2(-1, 1), 0, 1);
     }
 )";
 
 const char* shader_screen_code_p = R"(
-    struct VS_OUT {
-        float4 pos : SV_POSITION;
-        float2 uv : TEXCOORD0;
-    };
-
     Texture2D tex : register(t0);
-    SamplerState samp : register(s0);
+    SamplerState samplerState : register(s0);
 
-    float4 PS(VS_OUT input) : SV_TARGET {
-        return tex.Sample(samp, input.uv);
+    float4 PS(float4 position : SV_Position, float2 uv : TEXCOORD) : SV_Target
+    {
+        float3 color = tex.Sample(samplerState, uv).rgb;
+        float3 sepia = float3(
+            dot(color, float3(0.393, 0.769, 0.189)),
+            dot(color, float3(0.349, 0.686, 0.168)),
+            dot(color, float3(0.272, 0.534, 0.131))
+        );
+        return float4(sepia, 1);
     }
 )";
 
-static ID3D11VertexShader* shader_screen_v;
-static ID3D11PixelShader* shader_screen_p;
-static ID3D11Buffer* vertex_buffer;
-static ID3D11Buffer* index_buffer;
-static ID3D11Buffer* params_buffer;
+static ID3D11VertexShader* shader_screen_v = nullptr;
+static ID3D11PixelShader* shader_screen_p = nullptr;
+static ID3D11Buffer* vertex_buffer = nullptr;
+static ID3D11Buffer* index_buffer = nullptr;
+static ID3D11SamplerState* sampler_state = nullptr;
 
 static void check_dx_error(HRESULT hr, ID3DBlob* errorBlob) {
     if (FAILED(hr)) {
@@ -152,9 +115,13 @@ static void resources_init() {
     hr = dxDevice->CreateBuffer(&ibd, &iinitData, &index_buffer);
     check_dx_error(hr, NULL);
 
-    // params buffer
-    D3D11_BUFFER_DESC cbDesc = { sizeof(ShaderParams), D3D11_USAGE_DYNAMIC, D3D11_BIND_CONSTANT_BUFFER, D3D11_CPU_ACCESS_WRITE, 0, 0 };
-    hr = dxDevice->CreateBuffer(&cbDesc, nullptr, &params_buffer);
+    // sampler
+    D3D11_SAMPLER_DESC sampDesc = {};
+    sampDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+    sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
+    sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
+    sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+    hr = dxDevice->CreateSamplerState(&sampDesc, &sampler_state);
     check_dx_error(hr, NULL);
 }
 
@@ -217,24 +184,17 @@ static void RenderTarget_free(RenderTarget* renderTarget) {
 }
 
 static void RenderTarget_draw(RenderTarget* renderTarget) {
-    ShaderParams params = {
-        { 100.0f, 100.0f },
-        { 200.0f, 200.0f },
-        { (float)dxInfo.BufferDesc.Width, (float)dxInfo.BufferDesc.Height }
-    };
-
-    D3D11_MAPPED_SUBRESOURCE mapped;
-    dxContext->Map(params_buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
-    memcpy(mapped.pData, &params, sizeof(ShaderParams));
-    dxContext->Unmap(params_buffer, 0);
-
+    ID3D11RenderTargetView* pOriginalRenderTarget = nullptr;
+    dxContext->OMGetRenderTargets(1, &pOriginalRenderTarget, nullptr);
+    
     dxContext->VSSetShader(shader_screen_v, nullptr, 0);
     dxContext->PSSetShader(shader_screen_p, nullptr, 0);
-    dxContext->VSSetConstantBuffers(0, 1, &params_buffer);
-    dxContext->PSSetShaderResources(0, 1, &renderTarget->textureView);
-
     dxContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+    
     dxContext->Draw(4, 0);
+    
+    dxContext->OMSetRenderTargets(1, &pOriginalRenderTarget, nullptr);
+    if (pOriginalRenderTarget) pOriginalRenderTarget->Release();
 }
 
 HRESULT hookDXGIPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags) {
