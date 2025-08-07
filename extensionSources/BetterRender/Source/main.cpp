@@ -39,21 +39,49 @@ typedef struct {
     float u, v;
 } Vertex;
 
+typedef struct {
+    float pos[2];
+    float size[2];
+    float screen[2];
+} ShaderParams;
+
 const char* shader_screen_code_v = R"(
-    struct VS_IN {
-        float2 pos : POSITION;
-        float2 uv : TEXCOORD;
+    cbuffer Params : register(b0) {
+        float2 pos;    // Позиция (в пикселях)
+        float2 size;   // Размер (в пикселях)
+        float2 screen; // Разрешение экрана (ширина, высота)
     };
 
     struct VS_OUT {
-        float4 pos : SV_POSITION;
-        float2 uv : TEXCOORD;
+        float4 pos : SV_Position;
+        float2 uv  : TEXCOORD;
     };
 
-    VS_OUT VS(VS_IN input) {
+    VS_OUT VS(uint vertexID : SV_VertexID) {
         VS_OUT output;
-        output.pos = float4(input.pos, 0.0, 1.0);
-        output.uv = input.uv;
+        
+        // Генерация 4 вершин (квад) через vertexID (0,1,2,3)
+        float2 vertices[4] = {
+            float2(0, 0), // Верхний левый
+            float2(1, 0),  // Верхний правый
+            float2(0, 1),  // Нижний левый
+            float2(1, 1)   // Нижний правый
+        };
+
+        // Преобразуем локальные координаты (0-1) в экранные (пиксели)
+        float2 vertexPos = pos + vertices[vertexID] * size;
+
+        // Конвертируем в NDC [-1, 1] (DirectX 11)
+        output.pos = float4(
+            (vertexPos.x / screen.x) * 2.0f - 1.0f,
+            -(vertexPos.y / screen.y) * 2.0f + 1.0f, // Ось Y инвертирована
+            0.0f,
+            1.0f
+        );
+
+        // UV-координаты (0-1)
+        output.uv = vertices[vertexID];
+
         return output;
     }
 )";
@@ -76,6 +104,7 @@ static ID3D11VertexShader* shader_screen_v;
 static ID3D11PixelShader* shader_screen_p;
 static ID3D11Buffer* vertex_buffer;
 static ID3D11Buffer* index_buffer;
+static ID3D11Buffer* params_buffer;
 
 static void check_dx_error(HRESULT hr, ID3DBlob* errorBlob) {
     if (FAILED(hr)) {
@@ -115,11 +144,18 @@ static void resources_init() {
 
     D3D11_BUFFER_DESC vbd = { sizeof(vertices), D3D11_USAGE_IMMUTABLE, D3D11_BIND_VERTEX_BUFFER };
     D3D11_SUBRESOURCE_DATA vinitData = { vertices };
-    dxDevice->CreateBuffer(&vbd, &vinitData, &vertex_buffer);
+    hr = dxDevice->CreateBuffer(&vbd, &vinitData, &vertex_buffer);
+    check_dx_error(hr, NULL);
 
     D3D11_BUFFER_DESC ibd = { sizeof(indices), D3D11_USAGE_IMMUTABLE, D3D11_BIND_INDEX_BUFFER };
     D3D11_SUBRESOURCE_DATA iinitData = { indices };
-    dxDevice->CreateBuffer(&ibd, &iinitData, &index_buffer);
+    hr = dxDevice->CreateBuffer(&ibd, &iinitData, &index_buffer);
+    check_dx_error(hr, NULL);
+
+    // params buffer
+    D3D11_BUFFER_DESC cbDesc = { sizeof(ShaderParams), D3D11_USAGE_DYNAMIC, D3D11_BIND_CONSTANT_BUFFER, D3D11_CPU_ACCESS_WRITE, 0, 0 };
+    hr = dxDevice->CreateBuffer(&cbDesc, nullptr, &params_buffer);
+    check_dx_error(hr, NULL);
 }
 
 // ----------------------------------- render target
@@ -181,37 +217,24 @@ static void RenderTarget_free(RenderTarget* renderTarget) {
 }
 
 static void RenderTarget_draw(RenderTarget* renderTarget) {
-    float posX = 100.0f;
-    float posY = 200.0f;
-    float scale = 1.0f;
-
-    XMMATRIX worldMatrix = XMMatrixScaling(scale, scale, 1.0f) * XMMatrixTranslation(posX / dxInfo.BufferDesc.Width * 2 - 1, -posY / dxInfo.BufferDesc.Height * 2 + 1, 0.0f);
-
-    struct ConstantBuffer {
-        XMMATRIX transform;
+    ShaderParams params = {
+        { 100.0f, 100.0f },
+        { 200.0f, 200.0f },
+        { (float)dxInfo.BufferDesc.Width, (float)dxInfo.BufferDesc.Height }
     };
 
-    ID3D11Buffer* constantBuffer;
-    D3D11_BUFFER_DESC cbDesc = { sizeof(ConstantBuffer), D3D11_USAGE_DYNAMIC, D3D11_BIND_CONSTANT_BUFFER, D3D11_CPU_ACCESS_WRITE };
-    dxDevice->CreateBuffer(&cbDesc, nullptr, &constantBuffer);
+    D3D11_MAPPED_SUBRESOURCE mapped;
+    dxContext->Map(params_buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
+    memcpy(mapped.pData, &params, sizeof(ShaderParams));
+    dxContext->Unmap(params_buffer, 0);
 
-    D3D11_MAPPED_SUBRESOURCE mappedResource;
-    dxContext->Map(constantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
-    memcpy(mappedResource.pData, &worldMatrix, sizeof(XMMATRIX));
-    dxContext->Unmap(constantBuffer, 0);
-
-    // -----------------------------------
     dxContext->VSSetShader(shader_screen_v, nullptr, 0);
     dxContext->PSSetShader(shader_screen_p, nullptr, 0);
+    dxContext->VSSetConstantBuffers(0, 1, &params_buffer);
     dxContext->PSSetShaderResources(0, 1, &renderTarget->textureView);
 
-    UINT stride = sizeof(Vertex);
-    UINT offset = 0;
-    dxContext->IASetVertexBuffers(0, 1, &vertex_buffer, &stride, &offset);
-    dxContext->IASetIndexBuffer(index_buffer, DXGI_FORMAT_R16_UINT, 0);
-    dxContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
-    dxContext->DrawIndexed(6, 0, 0);
+    dxContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+    dxContext->Draw(4, 0);
 }
 
 HRESULT hookDXGIPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags) {
