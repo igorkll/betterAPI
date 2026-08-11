@@ -17,7 +17,7 @@
         "name": "SteamAPI",
         "format": "bext",
         "url": "https://raw.githubusercontent.com/igorkll/betterAPI/refs/heads/main/extensions/SteamAPI.bext",
-        "version": "1",
+        "version": "2",
         "author": "AlexTool"
     },
     {
