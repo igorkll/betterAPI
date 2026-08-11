@@ -14,6 +14,13 @@
         "author": "AlexTool"
     },
     {
+        "name": "SteamAPI",
+        "format": "bext",
+        "url": "https://raw.githubusercontent.com/igorkll/betterAPI/refs/heads/main/extensions/SteamAPI.bext",
+        "version": "1",
+        "author": "AlexTool"
+    },
+    {
         "name": "BetterNetwork",
         "format": "bext",
         "url": "https://raw.githubusercontent.com/igorkll/betterAPI/refs/heads/main/extensions/BetterNetwork.bext",
