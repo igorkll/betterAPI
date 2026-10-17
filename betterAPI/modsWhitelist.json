@@ -12,7 +12,13 @@
     {
         //"fileId" : 2948210047,
         "localId" : "9fd09c44-c46a-45b9-a7b9-da6f115989c0",
-        "name" : "sound mod",
+        "name" : "Sound mod",
+        "apis" : ["dlm"]
+    },
+    {
+        //"fileId" : 2948210047,
+        "localId" : "898060a5-e07e-402e-8da7-2ed4053ceeab",
+        "name" : "Sound mod [Without disk spawn]",
         "apis" : ["dlm"]
     },
     {
