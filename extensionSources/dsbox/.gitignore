@@ -1,0 +1,17 @@
+# CMake build output
+out/
+build/
+
+# Visual Studio
+.vs/
+*.user
+CMakeSettings.json
+
+# Compiled binaries
+*.dll
+*.so
+*.exe
+*.lib
+*.pdb
+*.obj
+*.o

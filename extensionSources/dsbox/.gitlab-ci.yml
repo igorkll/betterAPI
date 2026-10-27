@@ -1,0 +1,73 @@
+stages:
+  - build
+
+variables:
+  GIT_DEPTH: "1"
+
+# -----------------------------------------------------------------------
+# Linux (GCC + Ninja) -- this job's steps were verified end-to-end
+# (configure, build, ctest, and a manual smoke run of the launcher)
+# before this file was written.
+# -----------------------------------------------------------------------
+build:linux:
+  stage: build
+  image: ubuntu:24.04
+  tags:
+    - linux
+  before_script:
+    - apt-get update -qq
+    - apt-get install -y -qq --no-install-recommends cmake ninja-build g++ git
+  script:
+    - cmake --preset linux-x64-field
+    - cmake --build --preset linux-x64-field
+    - ctest --preset linux-x64-field
+  artifacts:
+    when: on_failure
+    paths:
+      - out/build/linux-x64-field/Testing
+    expire_in: 1 week
+
+# -----------------------------------------------------------------------
+# Windows (MSVC + Ninja)
+#
+# NOTE: unlike the Linux job above, this one could not be verified in
+# this environment -- there is no Windows/MSVC toolchain available here.
+# The steps below follow standard practice for GitLab's Windows shared
+# runners, but you will likely need to adjust:
+#   - the `tags:` value for your actual runner (shared vs. self-hosted)
+#   - the vswhere/vcvars64.bat paths if your runner's Visual Studio
+#     layout differs
+# Please run this once by hand (or via a manual pipeline) and fix up
+# whatever doesn't match your runner before relying on it.
+# -----------------------------------------------------------------------
+build:windows:
+  stage: build
+  tags:
+    - windows
+    - shared-windows
+  before_script:
+    # Locate and activate the MSVC developer environment, then re-export
+    # every variable it sets (PATH, INCLUDE, LIB, VSINSTALLDIR, ...) into
+    # this job's environment -- each `script:` line normally runs in a
+    # fresh process, so without this, cl.exe and the SegmentHeap.cmake
+    # include the x64-field preset needs (via $env{VSINSTALLDIR}) won't
+    # be found.
+    - |
+      $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+      $vsPath = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+      $vcvars = Join-Path $vsPath "VC\Auxiliary\Build\vcvars64.bat"
+      $envDump = cmd.exe /c "`"$vcvars`" && set"
+      foreach ($line in $envDump) {
+        if ($line -match '^([^=]+)=(.*)$') {
+          [System.Environment]::SetEnvironmentVariable($matches[1], $matches[2])
+        }
+      }
+  script:
+    - cmake --preset x64-field
+    - cmake --build --preset x64-field
+    - ctest --preset x64-field
+  artifacts:
+    when: on_failure
+    paths:
+      - out/build/x64-field/Testing
+    expire_in: 1 week

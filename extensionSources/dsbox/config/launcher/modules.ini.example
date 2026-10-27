@@ -1,0 +1,85 @@
+; Example DSBox module configuration.
+;
+; Usage:  dsbox config/launcher/modules.ini.example
+;     (or copy/rename it to config/modules.ini next to the built
+;     launcher -- see "Convention" in launcher/src/main.cpp -- to have
+;     it loaded automatically on every run, with no argument needed.)
+;
+; Moved here (repo-level config/launcher/) as part of the top-level
+; config/ consolidation -- was previously launcher/example_modules.ini.
+; Kept as a ".example" file rather than a live "modules.ini" so it is
+; never loaded automatically by accident; see docs/BUILD_LAYOUT.md for
+; the full config/ layout.
+;
+; Every "<alias>.path" key under [modules] describes one module to load.
+; <alias> is just a grouping label local to this file -- it does not have
+; to match the module's own name(). Relative paths are resolved against
+; the directory containing this file.
+;
+; NOTE: The network stack (dsbox.net, dsbox.net.socket, dsbox.net.http,
+; dsbox.net.tls, dsbox.net.tls.openssl, ...) is statically linked into the
+; launcher when it is built with DSBOX_LAUNCHER_WITH_NET=ON (the default).
+; Those modules are loaded automatically via DSBOX_STATIC_MODULE --
+; they do NOT need entries in this file.
+;
+; The [net.http] and [net.tls.openssl] sections below show the optional
+; overrides; the defaults work without them.
+
+[modules]
+ping.path    = plugins/ping.so
+ping.enabled = true
+
+; Disabled entries are parsed but skipped, and are not treated as errors.
+; telemetry.path    = plugins/telemetry.so
+; telemetry.enabled = false
+
+; -----------------------------------------------------------------------
+; Network stack configuration (all keys optional; defaults shown)
+; -----------------------------------------------------------------------
+
+; [net]
+; max_redirects                          = 20
+; default_timeout_ms                     = 0
+; body_pipe_capacity                     = 262144
+; strip_credentials_on_cross_origin_redirect = true
+
+; [net.file]
+; path_style = posix           ; posix | windows | both
+
+; [net.socket]
+; connect_timeout_ms     = 30000
+; per_address_timeout_ms = 10000
+; tcp_no_delay           = true
+; tcp_keep_alive         = true
+
+; [net.http]
+; user_agent         = DSBox/0.1
+; keep_alive         = true
+; max_idle_per_host  = 4
+; max_idle_total     = 32
+; idle_timeout_ms    = 30000
+; connect_timeout_ms = 0       ; 0 = use net.socket value
+; max_header_bytes   = 65536
+; body_pipe_capacity = 262144
+
+; [net.tls]
+; use_system_ca = true         ; set to false to rely only on net.tls.localca
+
+; [net.tls.openssl]
+; handshake_timeout_ms = 15000
+; trust_refresh_ms     = 30000 ; 0 = re-read trust for every new connection
+
+; -----------------------------------------------------------------------
+; dsbox_android_adb (device discovery + logcat over the `adb` CLI)
+; -----------------------------------------------------------------------
+; Not linked into this generic launcher by default. A host that wants it
+; either links DSBox::AndroidAdb statically (same pattern as the network
+; stack above in launcher/CMakeLists.txt -- DSBOX_LAUNCHER_WITH_NET), or
+; loads it dynamically as a plugin, e.g.:
+;
+; android_adb.path = DSBoxAndroidAdb.dll   ; .so on Linux/macOS
+;
+; [android.adb]
+; adb_path                 = adb     ; name/path of the adb executable
+; device_watch_interval_ms = 1000    ; 0 disables the periodic watch
+; auto_start_device_watch  = true
