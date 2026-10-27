@@ -26,5 +26,12 @@
         "url": "https://raw.githubusercontent.com/igorkll/betterAPI/refs/heads/main/extensions/BetterNetwork.bext",
         "version": "0.1 BETA",
         "author": "BananaPen"
+    },
+    {
+        "name": "dsbox",
+        "format": "bext",
+        "url": "https://raw.githubusercontent.com/igorkll/betterAPI/refs/heads/main/extensions/dsbox.bext",
+        "version": "0.1.0 ALPHA",
+        "author": "AlexTool"
     }
 ]
